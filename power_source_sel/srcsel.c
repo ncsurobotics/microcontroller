@@ -1,3 +1,6 @@
+/* Ground P1.2 for external power
+ * Leave floating or high for battery power
+ */
 
 #include <msp430.h>
 
