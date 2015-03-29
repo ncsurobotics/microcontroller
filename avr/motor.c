@@ -1,5 +1,5 @@
 
-#include <sw.h>
+#include "sw.h"
 
 void init_motors(void) {
     /* Set PD0 -> PD5 as output (these are the motor PWM outputs) */
@@ -56,7 +56,7 @@ void set_motor_speed(Motor motor, int speed) {
         TCD0.CCD = duty_cycle;
         dir_bit = 1 << 4;
         break;
-    
+
     case STRAFET:
         TCD1.CCA = duty_cycle;
         dir_bit = 1 << 5;
@@ -67,7 +67,7 @@ void set_motor_speed(Motor motor, int speed) {
         dir_bit = 1 << 0;
         break;
 
-            
+
     default:
         return;
     }

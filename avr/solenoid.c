@@ -1,5 +1,5 @@
 
-#include <sw.h>
+#include "sw.h"
 
 void init_solenoids(void) {
     /* Enable output pins */

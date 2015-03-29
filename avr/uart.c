@@ -1,7 +1,7 @@
 
 #include <string.h>
 
-#include <sw.h>
+#include "sw.h"
 
 #define UART_RX_BUFF_SIZE 128
 

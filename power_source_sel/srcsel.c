@@ -1,4 +1,6 @@
-
+/**
+ * http://www.ti.com/tool/msp430-gcc-opensource
+ */
 #include <msp430.h>
 
 /* Port 1.x bits */
@@ -25,32 +27,32 @@ void delay1ms(void) {
 void main(void) {
     int last_srcsel = 0;
     int i;
-    
+
     /* Disable watchdog timer */
     WDTCTL = WDTPW | WDTHOLD;
-    
+
     /* Set clock frequency to 1Mhz */
     BCSCTL1 = CALBC1_1MHZ;
     DCOCTL = CALDCO_1MHZ;
-	
+
     /* P1.0 - Multiplexer S0
      * P1.1 - Multiplexer S1 (S2 is held high)
      * P1.2 - Source select input (pulled high internally)
      */
     P1DIR = 0x03;
 
-    /* Enable SRCSEL internal pullup */    
+    /* Enable SRCSEL internal pullup */
     P1REN = SRCSEL;
-    
+
     /* Turn off both voltage sources by default */
     P1OUT = VOFF;
-    
+
     /* Get initial value of switch */
     last_srcsel = SEL_VAL;
-    
+
     /* Delay 10 us */
     __delay_cycles(10);
-    
+
     /* Set initial output */
     if(last_srcsel == SEL_EXT) {
         /* External power */
@@ -59,7 +61,7 @@ void main(void) {
         /* Battery power */
         P1OUT = VBATT;
     }
-    
+
     while(1) {
         if(SEL_VAL != last_srcsel) {
             /* Only switch if the pin holds its value for 250 ms */
@@ -68,14 +70,14 @@ void main(void) {
                     i = 0;
                     break;
                 }
-                
+
                 __delay_cycles(100);
             }
-            
+
             if(i > 0) {
 	            /* Store new source value */
 	            last_srcsel = SEL_VAL;
-	            
+
 	            if(last_srcsel == SEL_EXT) {
 	                /* Switch to external power */
 	                P1OUT = VOFF;
@@ -86,10 +88,10 @@ void main(void) {
 	                P1OUT = VOFF;
 	                __delay_cycles(10);
 	                P1OUT = VBATT;
-	            }  
+	            }
             }
         }
-        
+
         /* Delay 1 ms */
         delay1ms();
     }
