@@ -35,6 +35,7 @@ for n in range(0, 2):
     for b in [0x02, n, 250]:
         serial.sendByte(b)
 
+
 def read_string():
     l = []
     while True:
@@ -45,6 +46,7 @@ def read_string():
     return ''.join(l)
 
 vl = []
+
 
 def read_depth():
     global vl
@@ -67,6 +69,7 @@ def read_depth():
         stddev = (sum([(v - mean) ** 2 for v in vl]) / (len(vl) - 1))**0.5
 
     print "0x%02x 0x%03x %6.3f (%6.3f %6.3f) %6.2f %6.2f" % (message[0], adc_res, voltage, mean, stddev, psi, depth)
+
 
 def get_temp():
     serial.sendByte(0x05)
