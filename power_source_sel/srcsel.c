@@ -1,6 +1,8 @@
-/**
- * http://www.ti.com/tool/msp430-gcc-opensource
+/* Ground P1.2 for external power
+ * Leave floating or high for battery power
  */
+
+/* http://www.ti.com/tool/msp430-gcc-opensource */
 #include <msp430.h>
 
 /* Port 1.x bits */
