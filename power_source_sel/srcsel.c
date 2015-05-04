@@ -1,5 +1,5 @@
 /* Ground P1.2 for external power
- * Leave floating or high for battery power
+ * Leave floating or high for LiPo battery power
  */
 
 /* http://www.ti.com/tool/msp430-gcc-opensource */
