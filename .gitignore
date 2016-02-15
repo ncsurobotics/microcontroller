@@ -1,0 +1,5 @@
+*.o
+*.obj
+*.hex
+*Icon*
+.DS_Store
