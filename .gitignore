@@ -1,5 +1,17 @@
+#General C leftovers
 *.o
 *.obj
 *.hex
-*Icon*
+*.atsln
+*.atsuo
+*.cproj
+
+#Atmel Studio's Debug folder
+*/Debug/
+
+#This entire block is for Icon\r\r
+*Icon
+#end block.
+
+#DS Store... a mac thing
 .DS_Store
