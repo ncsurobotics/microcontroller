@@ -25,6 +25,10 @@ void master_power_off(int* fail);
 int kill_btn_depressed(void);
 void hard_ack(void);
 void delay_ms( int ms );
+int voltage_sensed_on_master_bus(void);
+
+int power_bus_voltage_channel           = 3;
+uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1; //0x0CF1 = 18V
 
 
 int main(void)
@@ -32,7 +36,6 @@ int main(void)
 	PWM_init();
 	PWM_set1000( 500 );
 	
-	int power_bus_voltage_channel = 3;
 	uint16_t V1_12b;
 	int pwm_lsb = 4;
 	
@@ -45,8 +48,7 @@ int main(void)
         switch(state) {
         
         case MASTER_OFF:
-            state = STARTUP;
-            // if( voltage_sensed_on_master_bus() ) {state = STARTUP;}
+            if( voltage_sensed_on_master_bus() ) {state = STARTUP;}
             
         case STARTUP:
             master_power_on(&fail);
@@ -58,10 +60,6 @@ int main(void)
             break;
         
         case MASTER_ON: //this is essentially the idle phase
-            //Remove this when ready to test
-            V1_12b = ADC_read_sample( power_bus_voltage_channel );
-            PWM_set1000( V1_12b/pwm_lsb -23 );
-            
      
             // Enter shutdown mode if user presses kill button.
             if (kill_btn_depressed()==1) {
@@ -79,9 +77,23 @@ int main(void)
             break;
             
         }
+        
+        //Remove this when ready to write UART Code.
+        V1_12b = ADC_read_sample( power_bus_voltage_channel );
+        PWM_set1000( V1_12b/pwm_lsb -23 );
+        
         _delay_ms( 0 );
     }
         
+}
+
+int voltage_sensed_on_master_bus(void) {
+    int val = ADC_read_sample( power_bus_voltage_channel );
+    if (val >= POWER_BUS_THRESHOLD_VOLTAGE ) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
