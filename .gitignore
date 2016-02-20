@@ -5,9 +5,13 @@
 *.atsln
 *.atsuo
 *.cproj
+*.ini
 
 #Atmel Studio's Debug folder
 */Debug/
+
+#other files
+*.xml
 
 #This entire block is for Icon\r\r
 *Icon

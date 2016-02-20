@@ -28,7 +28,7 @@ void delay_ms( int ms );
 int voltage_sensed_on_master_bus(void);
 
 int power_bus_voltage_channel           = 3;
-uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1; //0x0CF1 = 18V
+uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>1; //0x0CF1 = 18V
 
 
 int main(void)
@@ -49,6 +49,7 @@ int main(void)
         
         case MASTER_OFF:
             if( voltage_sensed_on_master_bus() ) {state = STARTUP;}
+			break;
             
         case STARTUP:
             master_power_on(&fail);
@@ -82,7 +83,7 @@ int main(void)
         V1_12b = ADC_read_sample( power_bus_voltage_channel );
         PWM_set1000( V1_12b/pwm_lsb -23 );
         
-        _delay_ms( 0 );
+        _delay_ms( 100 );
     }
         
 }
