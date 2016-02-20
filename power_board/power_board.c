@@ -20,19 +20,45 @@ enum states {
 
 enum states state = MASTER_OFF;
 
-void master_power_on(int* fail);
+void init_io(void);
+void close_master_relay(int* fail);
 void master_power_off(int* fail);
 int kill_btn_depressed(void);
 void hard_ack(void);
 void delay_ms( int ms );
 int voltage_sensed_on_master_bus(void);
+int check_remote_power_switch(void);
+void default_startup(int* fail);
+
+// telemetry function
+void tm_sample_all(void);
 
 int power_bus_voltage_channel           = 3;
 uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1; //0x0CF1 = 18V
 
+typedef struct PIN_struct {
+	char* name;
+	char* description;
+	uint8_t pos;
+	PORT_t* port;
+} pin_t;
+
+pin_t SHDN_Elec_pin = {.name="!SHDN Electronics",
+							.description="GPIO for controlling group A electronics",
+							.pos=2,
+							.port=&PORTB,
+};
+
+pin_t remote_pwr_pin = {.name="Remote_Pwr_Toggle",
+							 .description="Input for toggling Main Robot Power",
+							 .pos=2,
+							 .port=&PORTC,
+};
+
 
 int main(void)
 {
+    //enable when you're ready for I2C code. sei(); // enable global interrupts.
 	PWM_init();
 	PWM_set1000( 500 );
 	
@@ -40,9 +66,11 @@ int main(void)
 	int pwm_lsb = 4;
 	
     int fail = 0;
+	
     // initialize IO
     IO_PORT.DIR = 1<<MASTER_PWR_PIN; 
-    IO_PORT.PIN0CTRL = 0b011<<3;
+    IO_PORT.PIN0CTRL = 0b011<<3; //Set kill button to use a pull up resistor.
+	int pause_toggle_power_switch = 0;
     
     while (1) {
         switch(state) {
@@ -51,7 +79,7 @@ int main(void)
             if( voltage_sensed_on_master_bus() ) {state = STARTUP;}
             
         case STARTUP:
-            master_power_on(&fail);
+            default_startup(&fail);
             if ( !fail ) {
                 state = MASTER_ON;
             } else {
@@ -81,24 +109,37 @@ int main(void)
         //Remove this when ready to write UART Code.
         V1_12b = ADC_read_sample( power_bus_voltage_channel );
         PWM_set1000( V1_12b/pwm_lsb -23 );
+		
+		if (!pause_toggle_power_switch) {
+			check_remote_power_switch();
+		}
         
-        _delay_ms( 0 );
+        _delay_ms( 200 );
     }
         
 }
 
-int voltage_sensed_on_master_bus(void) {
-    int val = ADC_read_sample( power_bus_voltage_channel );
-    if (val >= POWER_BUS_THRESHOLD_VOLTAGE ) {
-        return 1;
-    } else {
-        return 0;
-    }
+/* ------------------------------
+ Main loop, DiscretE IO & Relays
+-------------------------------- */
+
+void init_io(void) {
+	return;
 }
 
+void default_startup(int* fail) {
+	close_master_relay(fail);
+	if ( *fail == 1 ) {
+		return;
+	}
+	
+	#ifndef electronics_disabled
+	SHDN_Elec_pin.port->OUT = 1<<SHDN_Elec_pin.pos;
+	
+	#endif
+}
 
-
-void master_power_on(int* fail)
+void close_master_relay(int* fail)
 {
     if ( kill_btn_depressed()==0 ) {
         IO_PORT.OUT = 1<<MASTER_PWR_PIN;    //Turn on the robot.
@@ -121,6 +162,15 @@ int kill_btn_depressed(void) {
     } else {
         return 1; //kill robot btn is depressed (B0 sees a GND)
     }
+}
+
+int voltage_sensed_on_master_bus(void) {
+	int val = ADC_read_sample( power_bus_voltage_channel );
+	if (val >= POWER_BUS_THRESHOLD_VOLTAGE ) {
+		return 1;
+		} else {
+		return 0;
+	}
 }
 
 void hard_ack(void) {
@@ -149,4 +199,92 @@ void delay_ms( int ms )
     {
       _delay_ms(1);
     }
+}
+
+static int prev_remote1_state = 0;
+int check_remote_power_switch(void) {
+	// init
+	int ret_val = 0;
+	
+	// determine whether looking for a rising or falling edge.
+	int remote1_current_state = (remote_pwr_pin.port->IN) & (1<<remote_pwr_pin.pos);
+	
+	if (prev_remote1_state == 0) {
+		if ( remote1_current_state == 1 ) {				// see if signal has gone high
+			prev_remote1_state = remote1_current_state; // rising edge detected.
+		} else {
+			// do nothing.
+		}
+		
+	// previous state was 1. Looking for a falling edge.
+	} else {
+		if (remote1_current_state == 0) {	// see if signal has gone low
+			ret_val = 1;					// falling edge detected.
+			prev_remote1_state = remote1_current_state; // save state.
+		} else {
+			// do nothing
+		}
+	}
+	
+	return ret_val;
+}
+
+
+/* ------------------------------
+// Telemetry Section
+-------------------------------- */
+
+// new pins
+pin_t V1_pin = {.name="V1",
+	.description="Measures Main Power Bus Voltage",
+	.pos=3,
+	.port=&PORTA,
+};
+
+pin_t V2_pin = {.name="V2",
+	.description="Measures Thruster Power Bus Voltage",
+	.pos=4,
+	.port=&PORTA,
+};
+
+pin_t I1_pin = {.name="I1",
+	.description="Measures Main Power Bus Current",
+	.pos=0,
+	.port=&PORTA,
+};
+
+pin_t I2_pin = {.name="I2",
+	.description="Measures Thruster Power Bus Current",
+	.pos=1,
+	.port=&PORTA,
+};
+
+// grouping structures
+typedef struct tm_channel_struct {
+	pin_t* pin;
+	uint16_t result;
+} tm_channel_t;
+
+tm_channel_t V1_chan = {.pin=&V1_pin};
+tm_channel_t V2_chan = {.pin=&V2_pin};
+tm_channel_t I1_chan = {.pin=&I1_pin};
+tm_channel_t I2_chan = {.pin=&I2_pin};
+
+typedef struct telemetry_struct {
+	tm_channel_t* V1;
+	tm_channel_t* I1;
+	
+	tm_channel_t* V2;
+	tm_channel_t* I2;
+} tm_t;
+
+tm_t POWERBOARD_tm = {.V1 = &V1_chan,
+	.V2 = &V2_chan,
+	.I1 = &I1_chan,
+	.I2 = &I2_chan,
+};
+
+void tm_sample_all(void) {
+	// code to sample V1,V2,I1,I2 in one pass.
+	return;
 }
