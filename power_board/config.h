@@ -9,7 +9,7 @@
 #ifndef POWER_BOARD_CONFIG_H_
 #define POWER_BOARD_CONFIG_H_
 
-
+#define remote_pwr_switch_enabled
 // #define electronics_disabled
 
 

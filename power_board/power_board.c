@@ -6,6 +6,7 @@
 #include <util/delay.h>
 #include "ADC.h"
 #include "PWM.h"
+#include "config.h"
 
 #define IO_PORT PORTB
 #define MASTER_PWR_PIN  1
@@ -29,12 +30,14 @@ void delay_ms( int ms );
 int voltage_sensed_on_master_bus(void);
 int check_remote_power_switch(void);
 void default_startup(int* fail);
+int toggl_sw_state(void);
+int remote_pwr_toggled(void);
 
 // telemetry function
 void tm_sample_all(void);
 
 int power_bus_voltage_channel           = 3;
-uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>1; //0x0CF1 = 18V
+uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>2; //0x0CF1 = 18V
 
 typedef struct PIN_struct {
 	char* name;
@@ -65,18 +68,19 @@ int main(void)
 	uint16_t V1_12b;
 	int pwm_lsb = 4;
 	
-    int fail = 0;
+    int fail = 0; // initial our fail flag to 0.
 	
     // initialize IO
-    IO_PORT.DIR = 1<<MASTER_PWR_PIN; 
-    IO_PORT.PIN0CTRL = 0b011<<3; //Set kill button to use a pull up resistor.
+	init_io();
 	int pause_toggle_power_switch = 0;
     
     while (1) {
         switch(state) {
         
         case MASTER_OFF:
+			//hard_ack();
             if( voltage_sensed_on_master_bus() ) {state = STARTUP;}
+			if( remote_pwr_toggled()) {state = STARTUP;}
 			break;
             
         case STARTUP:
@@ -94,6 +98,8 @@ int main(void)
             if (kill_btn_depressed()==1) {
                 state = SHUTDOWN;
             }
+			
+			if( remote_pwr_toggled()) {state = SHUTDOWN;}
             break;
             
         case SHUTDOWN:
@@ -103,6 +109,8 @@ int main(void)
             } else {
                 state = MASTER_ON;
             }
+			
+			_delay_ms( 50 );
             break;
             
         }
@@ -115,7 +123,7 @@ int main(void)
 			check_remote_power_switch();
 		}
         
-        _delay_ms( 100 );
+        //_delay_ms( 100 );
     }
         
 }
@@ -125,7 +133,55 @@ int main(void)
 -------------------------------- */
 
 void init_io(void) {
-	return;
+	// initialize the master relay
+	IO_PORT.DIR |= 1<<MASTER_PWR_PIN;
+	
+	// initialize the power board shut down button
+	IO_PORT.PIN0CTRL = 0b011<<3; //Set kill button to use a pull up resistor.
+	
+	// initialize downstream electronics power supply
+	#ifndef electronics_disabled
+	SHDN_Elec_pin.port->DIR |= 1<<SHDN_Elec_pin.pos;
+	SHDN_Elec_pin.port->OUT &= ~(1<<SHDN_Elec_pin.pos);
+	#endif
+	
+	// initialize remote power control
+	#ifdef remote_pwr_switch_enabled
+	remote_pwr_pin.port->DIR &= ~(1<<remote_pwr_pin.pos);
+	remote_pwr_pin.port->OUT &= ~(1<<remote_pwr_pin.pos);
+	remote_pwr_pin.port->PIN2CTRL = 0b011<<3; // set toggle switch to use a pull up resistor
+	#endif
+}
+
+int remote_pwr_toggled(void) {
+	// initializition
+	static int prev_toggl_switch_state = 0;
+	int ret_val = 0;
+	
+	
+	if (prev_toggl_switch_state == 0) {
+		// check toggle switch
+		if (toggl_sw_state()  == 1) {
+			prev_toggl_switch_state = 1;
+		}
+		
+	} else if (prev_toggl_switch_state == 1) {
+		// check toggle switch
+		if (toggl_sw_state() == 0 ) {
+			prev_toggl_switch_state = 0;
+			ret_val = 1;
+		}
+	}
+	
+
+	return ret_val;
+	
+}
+
+// Checks the state of the toggle switch, and return something that indicates whether it has been activated or not
+int toggl_sw_state(void) { 
+	int val = (remote_pwr_pin.port->IN & (1<<remote_pwr_pin.pos)); //
+	return (val == 0); //toggle switch is active low
 }
 
 void default_startup(int* fail) {
@@ -135,8 +191,7 @@ void default_startup(int* fail) {
 	}
 	
 	#ifndef electronics_disabled
-	SHDN_Elec_pin.port->OUT = 1<<SHDN_Elec_pin.pos;
-	
+	SHDN_Elec_pin.port->OUT |= 1<<SHDN_Elec_pin.pos;
 	#endif
 }
 
@@ -175,7 +230,7 @@ int voltage_sensed_on_master_bus(void) {
 }
 
 void hard_ack(void) {
-    int dt = 100;
+    int dt = 400;
     int pause = 4;
     int wait = pause*dt;
     int taps[] = {dt,dt,pause*dt};
