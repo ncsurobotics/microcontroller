@@ -10,6 +10,9 @@
 #Atmel Studio's Debug folder
 */Debug/
 
+#matlab backup files
+*.m~
+
 #other files
 *.xml
 
