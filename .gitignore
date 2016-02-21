@@ -2,7 +2,7 @@
 *.o
 *.obj
 *.hex
-*.atsln
+#*.atsln
 *.atsuo
 *.cproj
 *.ini
