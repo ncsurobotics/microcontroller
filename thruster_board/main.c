@@ -93,6 +93,7 @@ void /*send_and_*/recv_twi(void)
 
 	//twi_master_write(&TWI_MASTER, &packet);
 
+	// wait for transaction to occur & complete
 	do {
 		// Nothing
 	} while(TB_I2Cs_module.result != TWIS_RESULT_OK);
@@ -154,7 +155,7 @@ int main(void)
 		recv_twi();
 		
 		// if recv buffer is unchanged.
-		if (recv_data[0] == 0x00) {
+		if (recv_data[1] != 0x3f) {
 			dir1.port->OUT |= (1<<dir1.pos); //let a pin remain high.
 		}
 		
@@ -163,12 +164,7 @@ int main(void)
 			dir1.port->OUT &= ~(1<<dir1.pos); //set a pin low.
 		}
 		
+		// wipe all receive buffers clean. Force recv_twi() to hang until next data transmision occurs & completes.
+		TWI_SlaveInitializeDriver(&TB_I2Cs_module, &TWI_SLAVE, *slave_process);
     }
-}
-
-
-
-
-void do_nothing(void) {
-	return;
 }

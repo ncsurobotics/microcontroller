@@ -231,9 +231,13 @@ void TWI_SlaveStopHandler(TWI_Slave_t *twi)
  */
 void TWI_SlaveDataHandler(TWI_Slave_t *twi)
 {
+	// if DIR bit is set to 1 (master is requesting to read data from the slave)
 	if (twi->interface->SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 		TWI_SlaveWriteHandler(twi);
-	} else {
+	} 
+	
+	// if DIR bit is set to 0 (master is requesting to write data to the slave)
+	else {
 		TWI_SlaveReadHandler(twi);
 	}
 }
