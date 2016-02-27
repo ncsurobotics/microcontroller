@@ -79,20 +79,7 @@
  */
 
 #include "twis.h"
-#include <util/delay.h>
 
-typedef struct PIN_struct {
-	char* name;
-	char* description;
-	uint8_t pos;
-	PORT_t* port;
-} pin2_t;
-
-pin2_t dir12 = {.name="dir1",
-	.description="GPIO for controlling the directionality of motorcontroller #1",
-	.pos=4,
-	.port=&PORTC,
-};
 
 /*! \brief Initalizes TWI slave driver structure.
  *

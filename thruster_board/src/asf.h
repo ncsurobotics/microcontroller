@@ -77,7 +77,8 @@
 #include <xmega_twi/twi_master.h>
 #include <xmega_twi/twi_slave.h>
 
-// From module: TWI - Two-wire Slave Interface
+// From module: TWI - Two-wire Master and Slave Interface
+#include <twim.h>
 #include <twis.h>
 
 // From module: XMEGA compiler driver

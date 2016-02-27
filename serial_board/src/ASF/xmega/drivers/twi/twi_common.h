@@ -43,7 +43,6 @@
 /*
  * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
  */
- #include <stdbool.h>
  
 #ifndef TWI_COMMON_H
 #define TWI_COMMON_H
