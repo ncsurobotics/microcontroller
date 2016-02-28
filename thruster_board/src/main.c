@@ -34,16 +34,14 @@
 #include "sysclk.h"
 
 void twi_init(void);
+void twi_clear(void);
 void do_nothing(void);
 
 /* -------------------------------------------
 --- implementing official Atmel Driver -------
 -------------------------------------------*/
-//#define TWI_MASTER       TWIC
-//#define TWI_MASTER_PORT  PORTC
 #define TWI_SLAVE        TWIC
 #define TWI_SPEED        50000
-//#define TWI_MASTER_ADDR  0x50
 #define TWI_SLAVE_ADDR   0x60
 
 #define DATA_LENGTH     8
@@ -53,23 +51,12 @@ TWI_Slave_t TB_I2Cs_module;
 static void slave_process(void);
 void recv_twi(void);
 
-/* ---
-uint8_t data[DATA_LENGTH] = {
-	0x0f, 0x1f, 0x2f, 0x3f, 0x4f, 0x5f, 0x6f, 0x7f
-};
------ */
-
 uint8_t recv_data[DATA_LENGTH] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-/* No master to use in this implementation -------------
-twi_options_t m_options = {
-	.speed     = TWI_SPEED,
-	.chip      = TWI_MASTER_ADDR,
-	.speed_reg = TWI_BAUD(sysclk_get_cpu_hz(), TWI_SPEED)
-};
--------------------------------------------------------- */
+volatile uint8_t serial_idle_shutdown;
+
 static void slave_process(void) {
 	int i;
 
@@ -82,60 +69,44 @@ ISR(TWIC_TWIS_vect) {
 	TWI_SlaveInterruptHandler(&TB_I2Cs_module);
 }
 
-void /*send_and_*/recv_twi(void)
-{
-	/* ---------------------------
-	twi_package_t packet = {
-		.addr_length = 0,
-		.chip        = TWI_SLAVE_ADDR,
-		.buffer      = (void *)data,
-		.length      = DATA_LENGTH,
-		.no_wait     = false
-	};
-	---------------------------- */
-
-	uint8_t i;
-
-	//TWI_MASTER_PORT.PIN0CTRL = PORT_OPC_WIREDANDPULL_gc;
-	//TWI_MASTER_PORT.PIN1CTRL = PORT_OPC_WIREDANDPULL_gc;
-
-	// in init function -------------- irq_initialize_vectors();
-
-	//sysclk_enable_peripheral_clock(&TWI_MASTER);
-	//twi_master_init(&TWI_MASTER, &m_options);
-	//twi_master_enable(&TWI_MASTER);
-
-	// in init function -------------- sysclk_enable_peripheral_clock(&TWI_SLAVE);
-	 // in init function -------------- TWI_SlaveInitializeDriver(&TB_I2Cs_module, &TWI_SLAVE, *slave_process);
-	// in init function -------------- TWI_SlaveInitializeModule(&TB_I2Cs_module, TWI_SLAVE_ADDR, TWI_SLAVE_INTLVL_MED_gc);
-
-	for (i = 0; i < TWIS_SEND_BUFFER_SIZE; i++) {
-		TB_I2Cs_module.receivedData[i] = 0;
-	}
-
-	cpu_irq_enable();
-
-	//twi_master_write(&TWI_MASTER, &packet);
-
-	// wait for transaction to occur & complete
-	do {
-		// Nothing
-	} while(TB_I2Cs_module.result != TWIS_RESULT_OK);
+/*
+ * No serial messages received for one second. There are potentially hardware issues, so signal a shutdown of the board.
+ */
+ISR(TCD0_OVF_vect) {
+	serial_idle_shutdown = 1;
 }
 
+/*
+ * Blocks until either a serial message is received or one second has passed without serial input
+ */
+void recv_twi(void)
+{
+	while(TB_I2Cs_module.result != TWIS_RESULT_OK && !serial_idle_shutdown);
+	TCD0.CNTH = 0x00;
+	TCD0.CNTL = 0x00;
+}
+
+/*
+ * Initializes TWI slave settings
+ */
 void twi_init(void)
 {
 	irq_initialize_vectors();
 	sysclk_enable_peripheral_clock(&TWI_SLAVE);
 	TWI_SlaveInitializeDriver(&TB_I2Cs_module, &TWI_SLAVE, *slave_process);
 	TWI_SlaveInitializeModule(&TB_I2Cs_module, TWI_SLAVE_ADDR, TWI_SLAVE_INTLVL_MED_gc);
-	/*
-	twi_master_options_t opt = {
-		.speed = 50000,
-		.chip  = 0x50
-	};
-	twi_master_setup(&TWIM0, &opt);
-	*/
+	cpu_irq_enable();
+}
+
+/*
+ * Clear serial input buffer
+ */
+void twi_clear(void)
+{
+	uint8_t i;
+	for (i = 0; i < TWIS_SEND_BUFFER_SIZE; i++) {
+		TB_I2Cs_module.receivedData[i] = 0;
+	}
 }
 
 
@@ -152,8 +123,8 @@ typedef struct PIN_struct {
 
 pin_t dir1 = {.name="dir1",
 	.description="GPIO for controlling the directionality of motorcontroller #1",
-	.pos=1,
-	.port=&PORTA,
+	.pos=4,
+	.port=&PORTC,
 };
 
 void TB_init(void);
@@ -169,11 +140,14 @@ Main program
 int main (void)
 {
 	/* Insert system clock initialization code here (sysclk_init()). */
-	dir1.port->DIR |= 1<<dir1.pos;
+	TCD0.PER = 977; // Overflow in 1000 ms (Might actually be 500 ms, need to test)
+	TCD0.CTRLA = 0b0111; // 1:1024 pre-scaler, 1 MHz : 977 Hz (Might actually be 2 MHz : 1953 Hz, need to test)
+	TCD0.INTCTRLA |= 0b10;
+	/*dir1.port->DIR |= 1<<dir1.pos;
 	while (1) {
 		dir1.port->OUT ^= 1<<dir1.pos;
 		_delay_ms(100);
-	}
+	}*/
 	
 	board_init();
 
@@ -183,21 +157,20 @@ int main (void)
 	
 	while (1)
 	{
-		// attempt to recv data. Will get stuck inside this function if
-		// master device is not connected to the same bus and transmitting data.
+		// Attempt to receive data. Will block until data has been received or a second has passed.
 		recv_twi();
 		
-		// if recv buffer is unchanged.
-		if (recv_data[1] != 0x3f) {
-			dir1.port->OUT |= (1<<dir1.pos); //let a pin remain high.
+		// Perform temporary shutdown code pin if serial communication has timed out
+		if (serial_idle_shutdown)
+		{
+			dir1.port->OUT |= (1<<dir1.pos);
+			serial_idle_shutdown = 0;
+		} else if (recv_data[0] = 0x3f) {
+			dir1.port->OUT &= ~(1<<dir1.pos); // Received thruster command set a pin low
 		}
 		
-		// if recv buffer has been changed.
-		else {
-			dir1.port->OUT &= ~(1<<dir1.pos); //set a pin low.
-		}
-		
-		// wipe all receive buffers clean. Force recv_twi() to hang until next data transmision occurs & completes.
+		// Wipe receive buffer. Reset slave state for next call to recv_data.
+		twi_clear();
 		TWI_SlaveInitializeDriver(&TB_I2Cs_module, &TWI_SLAVE, *slave_process);
 	}
 }
