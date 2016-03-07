@@ -1,36 +1,14 @@
 /**
  * \file
  *
- * \brief Empty user application template
+ * \brief Serial Board Source Code
  *
- */
-
-/**
- * \mainpage User Application template doxygen documentation
  *
- * \par Empty user application template
- *
- * Bare minimum empty user application template
- *
- * \par Content
- *
- * -# Include the ASF header files (through asf.h)
- * -# "Insert system clock initialization code here" comment
- * -# Minimal main function that starts with a call to board_init()
- * -# "Insert application code here" comment
- *
- */
-
-/*
- * Include header files for all drivers that have been imported from
- * Atmel Software Framework (ASF).
- */
-/*
- * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
+ 
  */
 #include <asf.h>
 
-# define F_CPU 1000000UL
+#include "sw.h"
 #include <avr/io.h>
 #include <util/delay.h>
 #include "twi_common.h"
@@ -133,21 +111,63 @@ void twi_init(void) {
 
 #define TEST_MESSAGE_SIZE 2
 
-int main (void)
-{
+void test_program1(void);
+void test_program1(void) {
 	uint8_t msg[TEST_MESSAGE_SIZE] = {0x05,0x4D};
 	uint8_t n = TEST_MESSAGE_SIZE;
-	
+		
 	twi_init();
-	
+		
 	uint8_t i = 1;
 	while (1)
 	{
 		// send a msg
 		send_twi(TWI_SLAVE_ADDR1, msg, n);
-		
+			
 		// modify the msg for next transmission, and add a small delay between each transmission
 		msg[0] = (i++%6) ;
 		_delay_ms(100);
 	}
+}
+
+/* ******************************************
+**** Copying old microcontroller code *******
+********************************************* */
+#include <string.h>
+#include <stdint.h>
+
+#include "sw.h"
+
+static int kill_status =-1;
+
+int enable_interrupts (void) {
+	/* Enable all interrupt levels */
+	PMIC.CTRL |= (PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm);
+	
+	/* Enable interrupts globally */
+	sei();
+}
+
+#define test1
+//#define test2
+//#define test3
+//#define test4
+
+int main (void) {
+	char command[3] = {0};
+	
+	/* Enable 32MHz clock and wait for it to be ready */
+	OSC.CTRL |= OSC_RC32MEN_bm;
+	while((OSC.STATUS & OSC_RC32MRDY_bm) == 0x00);
+	
+	/* Set clock to 32Mhz and then lock it */
+    CCP = CCP_IOREG_gc;
+    CLK.CTRL = CLK_SCLKSEL_RC32M_gc;
+    CLK.LOCK = CLK_LOCK_bm;
+	
+	while (true) {
+		
+	}
+		
+	return 0;
 }
