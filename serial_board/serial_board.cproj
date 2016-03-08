@@ -236,6 +236,12 @@
     <Compile Include="src\ASF\xmega\drivers\twi\twim.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\uart.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\uart.h">
+      <SubType>compile</SubType>
+    </Compile>
     <None Include="src\config\conf_twim.h">
       <SubType>compile</SubType>
     </None>

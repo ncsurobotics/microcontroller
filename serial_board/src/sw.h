@@ -66,6 +66,13 @@ typedef enum {
     SYNC_ERROR = 3
 } Error;
 
+typedef struct PIN_struct {
+	char* name;
+	char*description;
+	uint8_t pos;
+	PORT_t* port;
+} pin_t;
+
 void init_servos(void);
 void set_servo_position(Servo servo, unsigned int value);
 
@@ -75,6 +82,7 @@ void set_solenoid(Solenoid solenoid, bool value);
 void init_motors(void);
 void set_motor_speed(Motor motor, int speed);
 
+/*
 void init_serial(void);
 void realign_buffer(void);
 void serial_send_byte(char c);
@@ -83,6 +91,7 @@ void serial_print(char* s);
 int serial_available(void);
 int serial_read_byte(void);
 void serial_read_bytes(char* s, int n);
+*/
 
 void init_analog(void);
 void start_depth_reading(void);
