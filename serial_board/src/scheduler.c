@@ -1,0 +1,39 @@
+/*
+ * scheduler.c
+ *
+ * Created: 3/8/2016 6:29:47 PM
+ *  Author: Josh
+ */ 
+
+#include <avr/io.h>
+#include "scheduler.h"
+#include "analog.h"
+
+
+static volatile int counter = 0;
+
+/* 100 Hz timer */
+/* BACKGROUND: TCC0_OVF is automatically cleared upon the
+execution of this interrupt. */
+ISR(TCC0_OVF_vect) {
+	/* Increment counter, roll over at 1000 (once every 10 seconds) */
+	counter = (counter + 1) % 1000;
+	
+	/* Send depth at 10 Hz */
+	if (counter % 10 == 0) {
+		//start_depth_reading();
+	}
+	//...
+}
+
+void start_scheduler(void) {
+	/* Enable timer 0 on port C. Run timer/counter at 1/64 system clock (500kHz) */
+	TCC0.CTRLA = TC_CLKSEL_DIV64_gc;
+	TCC0.CTRLB = TC_WGMODE_SS_gc;
+	
+	/* "Mark" every 10ms (100Hz) with an overflow that will trigger an interrupt. */
+	TCC0.PER = 5000;
+	
+	/* Enable overflow interrupt at low level */
+	TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc;
+}

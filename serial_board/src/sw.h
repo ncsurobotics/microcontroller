@@ -12,6 +12,9 @@
 #include <avr/wdt.h>
 #include <util/delay.h>
 
+#include "scheduler.h"
+#include "uart.h"
+
 enum Commands {
     SW_RESET    = 0x72,  /* 'r' full reset */
     SW_NOP      = 0x00,
@@ -93,8 +96,10 @@ int serial_read_byte(void);
 void serial_read_bytes(char* s, int n);
 */
 
+/*
 void init_analog(void);
 void start_depth_reading(void);
+*/
 
 void init_status(void);
 void update_status(int counter);

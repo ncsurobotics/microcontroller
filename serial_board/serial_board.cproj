@@ -233,7 +233,19 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="src\analog.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\analog.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\ASF\xmega\drivers\twi\twim.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\scheduler.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\scheduler.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\uart.c">
