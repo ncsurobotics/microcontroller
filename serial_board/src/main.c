@@ -6,12 +6,12 @@
  *
  
  */
-#include <asf.h>
 
 #include "sw.h"
 
 #include "uart.h"
 #include "analog.h"
+#include "twi.h"
 	
 /* ******************************************
 **** Copying old microcontroller code *******
@@ -59,7 +59,7 @@ void synchronize_comm(void) {
 		}
 	}
 	
-	/* if there is any more data after 0x00 available... that is
+	/* if there is any more data available after sending 0x00... that is
 	a problem. Send an error/notification to seawolf. There is no 
 	code on seawolf to catch this... so, it'll probably screw up
 	some code on seawolf's side of things if this happens. */
@@ -92,12 +92,13 @@ int main (void) {
 	
 	/* initialize peripherals */
 	init_serial();	
+	init_twi();
 	init_analog();
 	
 	/* enable interrupts */
 	enable_interrupts();
 	
-	/* stream 0xff as a signal to seawolf that avr is ready for sychronization */
+	/* stream 0xff as a signal to seawolf that avr is ready for synchronization */
 	synchronize_comm();
 	
 	/* after initializing the serial link, start sending depth and

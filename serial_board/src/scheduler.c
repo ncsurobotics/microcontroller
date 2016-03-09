@@ -5,12 +5,16 @@
  *  Author: Josh
  */ 
 
+#include "sw.h"
+
 #include <avr/io.h>
 #include "scheduler.h"
 #include "analog.h"
+#include "depth.h"
 
 
 static volatile int counter = 0;
+static char depth_message[3] = {SW_DEPTH, 0, 0};
 
 /* 100 Hz timer */
 /* BACKGROUND: TCC0_OVF is automatically cleared upon the
@@ -21,9 +25,26 @@ ISR(TCC0_OVF_vect) {
 	
 	/* Send depth at 10 Hz */
 	if (counter % 10 == 0) {
-		//start_depth_reading();
+		depth_get_reading2(depth_message);
+		serial_send_bytes(depth_message, 3);
 	}
-	//...
+	
+	/* Send termperature once a second */
+	if(counter % 100 == 0) {
+		ADCA.CH1.CTRL |= ADC_CH_START_bm;
+	}
+	
+	/* Check batteries every 5 seconds */
+	if(counter % 500 == 0) {
+		//check_batteries();
+	}
+	
+	/* Check kill status every 100ms */
+	if(counter % 10) {
+		//check_kill();
+	}
+	
+	update_status(counter);
 }
 
 void start_scheduler(void) {

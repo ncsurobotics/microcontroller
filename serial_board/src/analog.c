@@ -5,8 +5,14 @@
  *  Author: Josh
  */ 
 
-#include "sw.h"
+
 #include "analog.h"
+#include "sw.h"
+
+#include "tempSense.h"
+#include "depth.h"
+
+#include "twi.h"
 
 enum DepthState {
 	NOT_RUNNING = 0,
@@ -14,20 +20,7 @@ enum DepthState {
 	BYTE2 = 2
 };
 
-static enum DepthState depth_state = NOT_RUNNING;
-static char depth_message[3] = {SW_DEPTH, 0, 0};
-	
-/* Temperature */
-ISR(ADCA_CH1_vect) {
-	char message[3];
-
-	message[0] = SW_TEMP;
-	message[1] = ADCA.CH1.RESH;
-	message[2] = ADCA.CH1.RESL;
-
-	serial_send_bytes(message, 3);
-}
-	
+/*
 static bool twi_is_error(void) {
 	uint8_t status;
 	bool rxack;
@@ -62,7 +55,9 @@ static void twi_error(void) {
 
 	serial_send_bytes(message, 3);
 }
-	
+*/
+
+/*	
 ISR(TWIE_TWIM_vect) {
 	if(twi_is_error()) {
 		twi_error();
@@ -87,54 +82,11 @@ ISR(TWIE_TWIM_vect) {
 		depth_state = NOT_RUNNING;
 		break;
 	}
-}
+} */
 
-void start_depth_reading(void) {
-	char message[3];
 
-	message[0] = SW_DEPTH;
-	message[1] = 0;
-	message[2] = 0;
-
-	/* Force bus to idle */
-	TWIE.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-
-	/* Set state */
-	depth_state = BYTE1;
-
-	/* Start transmission */
-	TWIE.MASTER.ADDR = 0x9b;
-}
-
-static void init_temp_sense(void) {
-	/* Set signed mode */
-    ADCA.CTRLB = ADC_CONMODE_bm;
-    ADCA.CTRLB = 0x00;
-
-    /* Select 1V internal vref as voltage reference for ADC and enable
-       temperature reference */
-    ADCA.REFCTRL = ADC_REFSEL_INT1V_gc | ADC_TEMPREF_bm;
-
-    /* Set ADC frequency of 2MHz / 256 */
-    ADCA.PRESCALER = ADC_PRESCALER_DIV256_gc;
-
-    /* Set temperature ADC channel settings */
-    ADCA.CH1.CTRL = ADC_CH_INPUTMODE_INTERNAL_gc;
-    ADCA.CH1.MUXCTRL = ADC_CH_MUXINT_TEMP_gc;
-    ADCA.CH1.INTCTRL = ADC_CH_INTLVL_LO_gc;
-	
-	/* Enable ADC */
-	ADCA.CTRLA |= ADC_ENABLE_bm;
-
-}
-
-static void init_depth_sense(void) {
-	/* Enable TWI interface for communicating with the depth sensor ADC */
-	TWIE.MASTER.BAUD = 155;
-	TWIE.MASTER.CTRLA = TWI_MASTER_INTLVL_LO_gc | TWI_MASTER_RIEN_bm | TWI_MASTER_WIEN_bm | TWI_MASTER_ENABLE_bm;
-}
 
 void init_analog(void) {
-	init_temp_sense();
-	init_depth_sense();
+	tempSense_init();
+	depth_init();
 }
