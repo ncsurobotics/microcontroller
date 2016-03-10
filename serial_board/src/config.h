@@ -22,5 +22,8 @@
 /* Depth Sensor */
 #define DEPTH_TWI_ADDR_SLAVE	0x9A
 
+/* Thruster board TWI */
+#define THRUSTER_TWI_ADDR		0x60
+
 
 #endif /* CONFIG_H_ */

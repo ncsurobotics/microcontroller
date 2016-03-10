@@ -94,6 +94,7 @@ int main (void) {
 	init_serial();	
 	init_twi();
 	init_analog();
+	init_motors();
 	
 	/* enable interrupts */
 	enable_interrupts();
@@ -112,6 +113,14 @@ int main (void) {
 		case SW_RESET:
 			software_reset();
 			break;
+			
+		//case SW_NOP:
+		//	break;
+		
+		case SW_MOTOR:
+			set_motor_speed(command[1], command[2]);
+			break;
+
 		}
 	}
 

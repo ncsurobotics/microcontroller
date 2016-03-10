@@ -83,7 +83,7 @@ void init_solenoids(void);
 void set_solenoid(Solenoid solenoid, bool value);
 
 void init_motors(void);
-void set_motor_speed(Motor motor, int speed);
+int set_motor_speed(Motor motor, int speed);
 
 /*
 void init_serial(void);
