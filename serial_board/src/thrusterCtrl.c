@@ -9,15 +9,18 @@ void init_motors(void) {
 }
 
 /* Set speed of motor. Value is -128 to 128 */
-int set_motor_speed(Motor motor, int speed) {
+int thruster_setThrusterSpeed(Motor motor, int speed) {
 	status_code_t status;
+	
+	//uint8_t buffer[2] = {motor, speed};
 
 	/* create variable for transmission */
 	twi_package_t packet = {
 		.chip			= THRUSTER_TWI_ADDR,
-		.addr_length	= 2,
-		.buffer			= (void *)	NULL,
-		.length			= (int)		NULL,
+		.addr[0]		= motor,
+		.addr_length	= 1,
+		.buffer			= &speed,
+		.length			= 1,
 		.no_wait		= false
 	};
 	
@@ -29,6 +32,6 @@ int set_motor_speed(Motor motor, int speed) {
 		return 0;
 		
 	} else {
-		return -1;
+		return status;
 	}
 }

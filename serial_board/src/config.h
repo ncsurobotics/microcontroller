@@ -10,6 +10,9 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+/* debug */
+#define DISABLE_SYNC //useful for jumping to a section of code
+
 /* TWI */
 #define TWI_MASTER				TWIE
 #define TWI_MASTER_PORT			PORTE

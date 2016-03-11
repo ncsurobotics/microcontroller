@@ -78,21 +78,8 @@
  * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
  */
 
-#include "twis.h"
+#include "twi.h"
 #include <util/delay.h>
-
-typedef struct PIN_struct {
-	char* name;
-	char* description;
-	uint8_t pos;
-	PORT_t* port;
-} pin2_t;
-
-pin2_t dir12 = {.name="dir1",
-	.description="GPIO for controlling the directionality of motorcontroller #1",
-	.pos=4,
-	.port=&PORTC,
-};
 
 /*! \brief Initalizes TWI slave driver structure.
  *
@@ -135,7 +122,6 @@ void TWI_SlaveInitializeModule(TWI_Slave_t *twi,
 	                              TWI_SLAVE_ENABLE_bm;
 	twi->interface->SLAVE.ADDR = (address<<1);
 }
-
 
 /*! \brief Common TWI slave interrupt service routine.
  *

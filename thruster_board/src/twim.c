@@ -1,55 +1,19 @@
-/**
- * \file
- *
- * \brief XMEGA TWI master source file.
- *
- * Copyright (c) 2010-2015 Atmel Corporation. All rights reserved.
- *
- * \asf_license_start
- *
- * \page License
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * 3. The name of Atmel may not be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * 4. This software may only be redistributed and used in connection with an
- *    Atmel microcontroller product.
- *
- * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
- * EXPRESSLY AND SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- * \asf_license_stop
- *
- */
 /*
- * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
- */
+ * twim.c
+ *
+ * Created: 3/9/2016 12:57:21 AM
+ *  Author: Josh
+ */ 
 
-
-#include "twim.h"
-
+#include "sw.h"
+#include "twi.h"
+#include "status_codes.h"
+#include <avr/interrupt.h>
+#include <avr/cpufunc.h>
+#include "config.h"
+#include <stdlib.h>
 
 /* Master Transfer Descriptor */
-
 static struct
 {
 	TWI_t *         bus;            // Bus register interface
@@ -114,6 +78,8 @@ static inline bool twim_idle (const TWI_t * twi)
 			== TWI_MASTER_BUSSTATE_IDLE_gc);
 }
 
+typedef uint8_t irqflags_t;
+
 /**
  * \internal
  *
@@ -132,12 +98,16 @@ static inline status_code_t twim_acquire(bool no_wait)
 		if (no_wait) { return ERR_BUSY; }
 	}
 
-	irqflags_t const flags = cpu_irq_save ();
+	/* callee-save and disable interrupts */
+	irqflags_t flags = SREG;
+	cli();
 
+	/* change the struct fields */
 	transfer.locked = true;
 	transfer.status = OPERATION_IN_PROGRESS;
 
-	cpu_irq_restore (flags);
+	/* callee-restore previous interrupt flag */
+	SREG = flags;
 
 	return STATUS_OK;
 }
@@ -166,7 +136,7 @@ static inline status_code_t twim_release(void)
 	 */
 	while (OPERATION_IN_PROGRESS == transfer.status);
 
-	while (! twim_idle(transfer.bus)) { barrier(); }
+	while (! twim_idle(transfer.bus)) { _MemoryBarrier(); }
 
 	status_code_t const status = transfer.status;
 
@@ -316,7 +286,7 @@ status_code_t twi_master_init(TWI_t *twi, const twi_options_t *opt)
 
 	PMIC.CTRL |= CONF_PMIC_INTLVL;
 
-	cpu_irq_enable();
+	sei();
 
 	return STATUS_OK;
 }
@@ -349,26 +319,33 @@ status_code_t twi_master_transfer(TWI_t *twi,
 	}
 
 	/* Initiate a transaction when the bus is ready. */
-
 	status_code_t status = twim_acquire(package->no_wait);
 
+	/* If twim module was successfully able to acquire control of the bus */
 	if (STATUS_OK == status) {
+		
+		/* initialize a couple of parameters faciliting the transmission */
 		transfer.bus         = (TWI_t *) twi;
 		transfer.pkg         = (twi_package_t *) package;
 		transfer.addr_count  = 0;
 		transfer.data_count  = 0;
 		transfer.read        = read;
 
+		/* bit shift to allow for a R/W bit */
 		uint8_t const chip = (package->chip) << 1;
 
+		/* if user has specified addr_length or user want to write */
 		if (package->addr_length || (false == read)) {
 			transfer.bus->MASTER.ADDR = chip;
+			
+		/* user wants to write */
 		} else if (read) {
 			transfer.bus->MASTER.ADDR = chip | 0x01;
 		}
 
-		status = twim_release();
+		status = twim_release(); // this can be a blocking operation
 	}
 
 	return status;
 }
+

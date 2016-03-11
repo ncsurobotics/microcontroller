@@ -12,6 +12,7 @@
 #include "uart.h"
 #include "analog.h"
 #include "twi.h"
+#include "config.h"
 	
 /* ******************************************
 **** Copying old microcontroller code *******
@@ -77,6 +78,8 @@ void synchronize_comm(void) {
 	serial_send_byte(0xf0);
 }
 
+char msg[3] = {0,0,0};
+
 int main (void) {
 	char command[3] = {0};
 	top_left.port->DIR |= 1<<top_left.pos;
@@ -99,8 +102,39 @@ int main (void) {
 	/* enable interrupts */
 	enable_interrupts();
 	
+	#ifndef DISABLE_SYNC
 	/* stream 0xff as a signal to seawolf that avr is ready for synchronization */
 	synchronize_comm();
+	#endif
+	
+	
+	
+	#ifdef	DISABLE_SYNC
+	PORTC.DIR |= 1<<2;
+	
+	char* command1;
+	char* command2;
+	
+	int8_t i=0;
+	while(1) {
+		PORTC.OUT ^= 1<<2;
+		
+		// send a command to thrusterboard
+		// cmd = set PWM to 75%
+		command1 = (char [3]) {SW_MOTOR, 3, 100};
+		command2 = (char [3]) {SW_MOTOR, 0, 0};
+			
+		for (int j=0; j<6; j++) {
+			command2[1] = thruster_setThrusterSpeed(j,i);
+		}
+		i++;
+			
+		
+		// report to host how well the attempt went
+		//serial_send_bytes(command2, 3);
+		_delay_ms(10);
+	}
+	#endif
 	
 	/* after initializing the serial link, start sending depth and
     temperature information */
@@ -118,7 +152,9 @@ int main (void) {
 		//	break;
 		
 		case SW_MOTOR:
-			set_motor_speed(command[1], command[2]);
+			msg[0] = SW_MOTOR;
+			msg[1] = thruster_setThrusterSpeed(command[1], command[2]);
+			serial_send_bytes(msg, 3);
 			break;
 
 		}
