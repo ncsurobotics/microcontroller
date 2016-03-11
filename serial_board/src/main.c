@@ -107,35 +107,6 @@ int main (void) {
 	synchronize_comm();
 	#endif
 	
-	
-	
-	#ifdef	DISABLE_SYNC
-	PORTC.DIR |= 1<<2;
-	
-	char* command1;
-	char* command2;
-	
-	int8_t i=0;
-	while(1) {
-		PORTC.OUT ^= 1<<2;
-		
-		// send a command to thrusterboard
-		// cmd = set PWM to 75%
-		command1 = (char [3]) {SW_MOTOR, 3, 100};
-		command2 = (char [3]) {SW_MOTOR, 0, 0};
-			
-		for (int j=0; j<6; j++) {
-			command2[1] = thruster_setThrusterSpeed(j,i);
-		}
-		i++;
-			
-		
-		// report to host how well the attempt went
-		//serial_send_bytes(command2, 3);
-		_delay_ms(10);
-	}
-	#endif
-	
 	/* after initializing the serial link, start sending depth and
     temperature information */
     start_scheduler(); // periodically sends depth/temp data to seawolf
