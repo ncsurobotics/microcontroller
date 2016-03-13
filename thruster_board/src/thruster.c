@@ -38,13 +38,15 @@ thruster_t star_thruster = {
 
 thruster_t stern_thruster = {
 	.dir_pin = {.port=&PORTA, .pos=3},
-	.pwm_pin = {.port=&PORTC, .pos=6, .pwm_ch=&TCC0, .CC=CCD},
+	//.pwm_pin = {.port=&PORTC, .pos=6, .pwm_ch=&TCC0, .CC=CCD}, //
+	.pwm_pin = {.port=&PORTE, .pos=0, .pwm_ch=&TCE0, .CC=CCA},
 	.value = 0,
 };
 
 thruster_t bow_thruster = {
 	.dir_pin = {.port=&PORTA, .pos=4},
-	.pwm_pin = {.port=&PORTC, .pos=7, .pwm_ch=&TCC0, .CC=CCD},
+	//.pwm_pin = {.port=&PORTC, .pos=7, .pwm_ch=&TCC0, .CC=CCD},
+	.pwm_pin = {.port=&PORTE, .pos=1, .pwm_ch=&TCE0, .CC=CCB},
 	.value = 0,
 };
 
@@ -76,7 +78,7 @@ void setup_thrusterIO (void) {
 	//thruster_array[2].dir_pin.port->OUT |= (1 << thruster_array[2].dir_pin.pos);
 	//while(1) {}
 	
-	for (int i=0; i < 6; i++) {
+	for (int i=5; i < 6; i++) {
 		/* init direction pins */
 		thruster_array[i].dir_pin.port->OUT |= (1 << thruster_array[i].dir_pin.pos);
 		thruster_array[i].dir_pin.port->DIR |= (1 << thruster_array[i].dir_pin.pos);
