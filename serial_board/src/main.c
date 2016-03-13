@@ -17,12 +17,7 @@
 /* ******************************************
 **** Copying old microcontroller code *******
 ********************************************* */
-#define test1
-//#define test2
-//#define test3
-//#define test4
 
-static int kill_status = -1;
 
 void enable_interrupts(void);
 void software_reset(void);
@@ -78,6 +73,11 @@ void synchronize_comm(void) {
 	serial_send_byte(0xf0);
 }
 
+static void invalid_request(char command) {
+	char message[3] = {SW_ERROR, INVALID_REQUEST, command};
+	serial_send_bytes(message, 3);
+}
+
 char msg[3] = {0,0,0};
 
 int main (void) {
@@ -118,18 +118,28 @@ int main (void) {
 		case SW_RESET:
 			software_reset();
 			break;
-			
-		//case SW_NOP:
-		//	break;
+		
+		case SW_NOP:
+			break;
 		
 		case SW_MOTOR:
-			msg[0] = SW_MOTOR;
-			msg[1] = thruster_setThrusterSpeed(command[1], command[2]);
-			serial_send_bytes(msg, 3);
+			thruster_setThrusterSpeed(command[1], command[2]);
 			break;
-
+			
+		case SW_STATUS:
+			set_status((uint8_t)command[2]);
+			break;
+			
+		case SW_TEMP:
+			ADCA.CH1.CTRL |= ADC_CH_START_bm;
+			break;
+			
+		default:
+			invalid_request(command[0]);
+			realign_buffer();
+			break;
 		}
 	}
-
+	
 	return 0;
 }

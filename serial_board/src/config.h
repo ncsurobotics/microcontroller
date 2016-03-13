@@ -11,7 +11,7 @@
 #define CONFIG_H_
 
 /* debug */
-#define DISABLE_SYNC //useful for jumping to a section of code
+//#define DISABLE_SYNC //useful for jumping to a section of code
 
 /* TWI */
 #define TWI_MASTER				TWIE
@@ -23,10 +23,15 @@
 #define CONF_PMIC_INTLVL        PMIC_MEDLVLEN_bm
 
 /* Depth Sensor */
-#define DEPTH_TWI_ADDR_SLAVE	0x9A
+#define DEPTH_TWI_ADDR_SLAVE	0x9A>>1
 
 /* Thruster board TWI */
 #define THRUSTER_TWI_ADDR		0x60
+
+/* ******* POWER ****
+******************* */ 
+#define POWER_BOARD_TWI_ADDR 0x61
+#define LOW_POWER_VOLTAGE	 0xfe
 
 
 #endif /* CONFIG_H_ */

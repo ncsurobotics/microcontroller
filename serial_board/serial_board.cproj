@@ -142,6 +142,12 @@
     <Compile Include="src\analog.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\power.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\power.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\thrusterCtrl.c">
       <SubType>compile</SubType>
     </Compile>
