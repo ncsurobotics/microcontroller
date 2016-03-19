@@ -78,7 +78,7 @@ void setup_thrusterIO (void) {
 	//thruster_array[2].dir_pin.port->OUT |= (1 << thruster_array[2].dir_pin.pos);
 	//while(1) {}
 	
-	for (int i=5; i < 6; i++) {
+	for (int i=0; i < 6; i++) {
 		/* init direction pins */
 		thruster_array[i].dir_pin.port->OUT |= (1 << thruster_array[i].dir_pin.pos);
 		thruster_array[i].dir_pin.port->DIR |= (1 << thruster_array[i].dir_pin.pos);

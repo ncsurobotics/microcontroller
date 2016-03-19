@@ -39,6 +39,8 @@ int main(void)
 	/* configure thruster control */
 	setup_thrusterIO();
 	
+	
+	
 	/* setup I2C */
 	enable_interrupts();
 	init_I2C();
