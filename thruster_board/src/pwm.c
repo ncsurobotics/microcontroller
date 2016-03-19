@@ -6,8 +6,8 @@
  */ 
 #include "pwm.h"
 
-#define TOP 60000 // frequency will be 20Khz
-#define DUTY 10000 // 50% duty cycle
+
+#define DUTY TOP/10 // 50% duty cycle
 #define TEST_PIN  2
 
 void pwm_init_pin( pin_pwm_t* pin ) {
@@ -19,7 +19,7 @@ void pwm_init_pin( pin_pwm_t* pin ) {
 	
 	/* configure the frequency for this pin */
 	pin->pwm_ch->PER = TOP;
-	pin->pwm_ch->CTRLA = 0x01;
+	pin->pwm_ch->CTRLA = 0x01; // set the prescaler to 1:1
 	
 	/* enable the appropiate capture compare */
 	if ( (pin->CC) == CCA ) {

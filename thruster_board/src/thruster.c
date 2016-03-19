@@ -9,7 +9,7 @@
 #include "sw.h"
 #include "pwm.h"
 
-#define SCALE60000	473
+#define SCALE60000	TOP/127
 
 typedef enum {
 	PORT	= 0,

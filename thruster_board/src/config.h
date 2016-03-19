@@ -33,5 +33,9 @@
 #endif
 #endif
 
+/* PWM config */
+#define F_PWM 20e3 // Frequency of the PWM signal controlling motors
+
+
 
 #endif /* CONFIG_H_ */

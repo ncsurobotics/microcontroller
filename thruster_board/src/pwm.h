@@ -10,6 +10,9 @@
 #define PWM_H_
 
 #include "sw.h"
+#include "config.h"
+
+#define TOP F_CPU/F_PWM // frequency will be 20Khz
 
 typedef enum {
 	CCA,
