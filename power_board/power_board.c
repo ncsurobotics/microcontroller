@@ -10,6 +10,7 @@
 #define IO_PORT PORTB
 #define MASTER_PWR_PIN  1
 #define MASTER_OFF_PIN  0
+#define MESSAGE_IS_ROBOT_KILLED 0
 
 enum states {
     MASTER_OFF,
@@ -19,6 +20,8 @@ enum states {
 };
 
 enum states state = MASTER_OFF;
+
+static void slave_process(uint8_t *receivedData, uint8_t *sendData);
 
 void init_io(void);
 void close_master_relay(int* fail);
@@ -38,6 +41,7 @@ void tm_sample_all(void);
 int power_bus_voltage_channel           = 3;
 uint8_t thruster_bus_voltage_channel		= 4;
 uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>2; //0x0CF1 = 18V
+uint8_t robot_killed = 0;
 
 pin_t SHDN_Elec_pin = {.name="!SHDN Electronics",
 							.description="GPIO for controlling group A electronics",
@@ -58,7 +62,7 @@ int main(void)
 	PORTD.DIR |= 1<<2;
 		
     sei(); // enable global interrupts.
-	init_I2C();
+	init_I2C(slave_process);
 	PWM_init();
 	PWM_set1000( 500 );
 	
@@ -67,7 +71,6 @@ int main(void)
 	int pwm_lsb = 4;
 	
     int fail = 0; // initial our fail flag to 0.
-	data_t command[2] = {0, 0}; // Buffer for incoming TWI messages
 	
     // initialize IO
 	init_io();
@@ -99,7 +102,7 @@ int main(void)
             }
 			
 			// Check kill switch (low voltage means kill robot)
-			uint8_t robot_killed = ADC_read_sample( thruster_bus_voltage_channel ) < 0x09E5;
+			robot_killed = ADC_read_sample( thruster_bus_voltage_channel ) < 0x09E5;
 			if (robot_killed) {
 				PORTD.OUT &= ~(1<<2);
 			} else {
@@ -349,4 +352,19 @@ tm_t POWERBOARD_tm = {.V1 = &V1_chan,
 void tm_sample_all(void) {
 	// code to sample V1,V2,I1,I2 in one pass.
 	return;
+}
+
+/*
+ * Handle incoming message
+ */
+static void slave_process(uint8_t *receivedData, uint8_t *sendData) {
+	switch (receivedData[0]) {
+	case MESSAGE_IS_ROBOT_KILLED:
+		// Request for kill switch state
+		sendData[0] = robot_killed;
+		break;
+	default:
+		// Unknown message type
+		break;
+	}
 }

@@ -11,9 +11,9 @@
 
 #include "sw.h"
 
-void init_I2C(void);
-void recv_twi(void);
-void I2C_recv(uint8_t msg[], uint8_t n);
-void I2C_reload(void);
+#define RECV_BUF_DATA_LENGTH 8
+
+void init_I2C(void *slave_process);
+void I2C_reload(void *slave_process);
 
 #endif /* I2C_H_ */
