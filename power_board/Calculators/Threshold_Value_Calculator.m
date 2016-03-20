@@ -8,10 +8,10 @@ fprintf(['Since the ADC has %d bits, it''s maximum (unsigned) value is\n',...
     
 Vref = 3.3/1.6;
 R1 = 2e3;
-R2 = 21e3;
+R2 = 27e3;
 fcn_Vin = @(Vout) Vout * R1 / (R1+R2);
 
-Vthresh = 18;
+Vthresh = 17;
 Vin = fcn_Vin(Vthresh);
 fprintf(['Let''s set our power-up threshold at %gV. This will present\n',...
         '%.3gV to the micro''s ADC.\n\n'], Vthresh, Vin);

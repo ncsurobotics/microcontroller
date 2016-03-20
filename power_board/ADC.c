@@ -5,10 +5,7 @@
  *  Author: admin
  */ 
 
-#ifndef F_CPU
-#define F_CPU 1000000UL // 1 MHz clock speed
-#endif
-
+#include "sw.h"
 #include <stdint.h>
 #include <avr/io.h>
 #include <util/delay.h>

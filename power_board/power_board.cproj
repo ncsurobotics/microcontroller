@@ -126,6 +126,12 @@
     <Compile Include="ADC.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="I2C.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="I2C.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="power_board.c">
       <SubType>compile</SubType>
     </Compile>
@@ -136,6 +142,24 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="PWM.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="status_codes.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="sw.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="twi.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="twi.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="twim.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="twis.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

@@ -1,12 +1,11 @@
-#ifndef F_CPU
-#define F_CPU 1000000UL // 1 MHz clock speed
-#endif
-
+#include "sw.h"
 #include <avr/io.h>
 #include <util/delay.h>
 #include "ADC.h"
 #include "PWM.h"
 #include "config.h"
+#include "I2C.h"
+#include "avr/interrupt.h"
 
 #define IO_PORT PORTB
 #define MASTER_PWR_PIN  1
@@ -37,14 +36,8 @@ int remote_pwr_toggled(void);
 void tm_sample_all(void);
 
 int power_bus_voltage_channel           = 3;
+uint8_t thruster_bus_voltage_channel		= 4;
 uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>2; //0x0CF1 = 18V
-
-typedef struct PIN_struct {
-	char* name;
-	char* description;
-	uint8_t pos;
-	PORT_t* port;
-} pin_t;
 
 pin_t SHDN_Elec_pin = {.name="!SHDN Electronics",
 							.description="GPIO for controlling group A electronics",
@@ -61,19 +54,24 @@ pin_t remote_pwr_pin = {.name="Remote_Pwr_Toggle",
 
 int main(void)
 {
-    //enable when you're ready for I2C code. sei(); // enable global interrupts.
+	// Debug pin
+	PORTD.DIR |= 1<<2;
+		
+    sei(); // enable global interrupts.
+	init_I2C();
 	PWM_init();
 	PWM_set1000( 500 );
+	
 	
 	uint16_t V1_12b;
 	int pwm_lsb = 4;
 	
     int fail = 0; // initial our fail flag to 0.
+	data_t command[2] = {0, 0}; // Buffer for incoming TWI messages
 	
     // initialize IO
 	init_io();
 	int pause_toggle_power_switch = 0;
-    
     while (1) {
         switch(state) {
         
@@ -90,6 +88,7 @@ int main(void)
             } else {
                 state = MASTER_OFF;
             }
+			
             break;
         
         case MASTER_ON: //this is essentially the idle phase
@@ -98,6 +97,14 @@ int main(void)
             if (kill_btn_depressed()==1) {
                 state = SHUTDOWN;
             }
+			
+			// Check kill switch (low voltage means kill robot)
+			uint8_t robot_killed = ADC_read_sample( thruster_bus_voltage_channel ) < 0x09E5;
+			if (robot_killed) {
+				PORTD.OUT &= ~(1<<2);
+			} else {
+				PORTD.OUT |= 1<<2;
+			}
 			
 			if( remote_pwr_toggled()) {state = SHUTDOWN;}
             break;
@@ -114,10 +121,9 @@ int main(void)
             break;
             
         }
-        
-        //Remove this when ready to write UART Code.
-        V1_12b = ADC_read_sample( power_bus_voltage_channel );
-        PWM_set1000( V1_12b/pwm_lsb -23 );
+				
+		V1_12b = ADC_read_sample( power_bus_voltage_channel );
+		PWM_set1000( V1_12b/pwm_lsb -23 );
 		
 		if (!pause_toggle_power_switch) {
 			check_remote_power_switch();

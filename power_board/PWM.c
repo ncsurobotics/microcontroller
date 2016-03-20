@@ -35,7 +35,7 @@ pin test_pin = {.name = "PD3",
 
 void PWM_init(void) {
 	// Configure pin for output
-	PORTD.DIR = 1<<test_pin.pos;    // Set pin to be an output
+	PORTD.DIR |= 1<<test_pin.pos;    // Set pin to be an output
 	
 	// Configure the TC
 	TCD0.PER = TOP; // Set the period to 1000us.
