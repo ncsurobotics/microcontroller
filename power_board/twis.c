@@ -190,15 +190,30 @@ void TWI_SlaveAddressMatchHandler(TWI_Slave_t *twi)
 		twi->status = TWIS_STATUS_BUSY;
 		twi->result = TWIS_RESULT_UNKNOWN;
 
-		/* Disable stop interrupt. */
+		/* Disable stop interrupt (the stop interrupt will be enabled again once some data has been received) */
 		uint8_t currentCtrlA = twi->interface->SLAVE.CTRLA;
 		twi->interface->SLAVE.CTRLA = currentCtrlA & ~TWI_SLAVE_PIEN_bm;
 
+		/* wipe byte counters clean */
 		twi->bytesReceived = 0;
 		twi->bytesSent = 0;
 
-		/* Send ACK, wait for data interrupt. */
+		/* if master cmds write operation Send ACK, wait for data interrupt. */
 		twi->interface->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+		
+		/* BACKGROUND: a data interrupt is signaled by DIF in the TWI Slave Status Register.
+		If master calls for a write operation (master writes data to slave), the slave will 
+		acknowledge master, and then the DIF flag will set and trigger the DataInterruptHandler 
+		*AFTER* master writes the byte of data it wanted to write to the slave.
+		
+		If master calls for a read operation (master wants to read data from the slave), then
+		the DIF flag will set and trigger the DataInterruptHandler as soon as this slave device
+		finishes acknowledging the master instead (as well as when this interrupt finishes such that
+		the hardware interrupt handler is free to handle a new interrupt). This is because the slave is 
+		soley responsible for putting data on the I2C bus.
+		
+		The DataInterruptHandler function is capable of automatically handling both of these situations.
+		*/
 	}
 }
 
@@ -230,8 +245,10 @@ void TWI_SlaveStopHandler(TWI_Slave_t *twi)
  */
 void TWI_SlaveDataHandler(TWI_Slave_t *twi)
 {
+	/* If master calls for a read operation (master wants to read data from slave) */
 	if (twi->interface->SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 		TWI_SlaveWriteHandler(twi);
+	/* master called for a write operation (master has written data to the slave) */
 	} else {
 		TWI_SlaveReadHandler(twi);
 	}
@@ -302,6 +319,7 @@ void TWI_SlaveWriteHandler(TWI_Slave_t *twi)
 	/* If ACK, master expects more data. */
 	else {
 		if (twi->bytesSent < TWIS_SEND_BUFFER_SIZE) {
+			/* load data from send buffer (assuming it's ready) */
 			uint8_t data = twi->sendData[twi->bytesSent];
 			twi->interface->SLAVE.DATA = data;
 			twi->bytesSent++;
@@ -315,6 +333,18 @@ void TWI_SlaveWriteHandler(TWI_Slave_t *twi)
 			TWI_SlaveTransactionFinished(twi, TWIS_RESULT_BUFFER_OVERFLOW);
 		}
 	}
+	
+	/* PROTIP: next interrupt will be signaled with the raising of the DIF flag,
+	*AND* possibly another flag as soon as master ACKs (or NACKs)  what the slave
+	just sent over the I2C bus. 
+	
+	If master NACK'd what the slave just put on the bus, that is like a request to
+	stop sending data. This handler may possibly run one more time, but it will notice
+	that a NACK was received. Upon this slave will (locally) release the I2C bus, and
+	expect master to do the same after master sends a stop bit... unless master sends
+	another start bit. This is a repeated start bit, upon which the slave may recognize
+	(if it was addressed in the sort of new transaction) and jump in on the still *BUSY*
+	I2C bus. */
 }
 
 

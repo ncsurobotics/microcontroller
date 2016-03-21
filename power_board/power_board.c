@@ -43,16 +43,20 @@ uint8_t thruster_bus_voltage_channel		= 4;
 uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>2; //0x0CF1 = 18V
 uint8_t robot_killed = 0;
 
+/* ****************************
+Typical GPIO Pin on the board
+***************************** */
+
 pin_t SHDN_Elec_pin = {.name="!SHDN Electronics",
-							.description="GPIO for controlling group A electronics",
-							.pos=2,
-							.port=&PORTB,
+	.description="GPIO for controlling group A electronics",
+	.pos=2,
+	.port=&PORTB,
 };
 
 pin_t remote_pwr_pin = {.name="Remote_Pwr_Toggle",
-							 .description="Input for toggling Main Robot Power",
-							 .pos=2,
-							 .port=&PORTC,
+	.description="Input for toggling Main Robot Power",
+	.pos=2,
+	.port=&PORTC,
 };
 
 
@@ -61,20 +65,24 @@ int main(void)
 	// Debug pin
 	PORTD.DIR |= 1<<2;
 		
+	/* enable interrupts */
     sei(); // enable global interrupts.
+	
+	/* initialize modules */
 	init_I2C(slave_process);
 	PWM_init();
 	PWM_set1000( 500 );
 	
-	
+	/* other variables */
 	uint16_t V1_12b;
 	int pwm_lsb = 4;
-	
     int fail = 0; // initial our fail flag to 0.
 	
-    // initialize IO
+    /* initialize IO pins */
 	init_io();
 	int pause_toggle_power_switch = 0;
+	
+	/* main loop */
     while (1) {
         switch(state) {
         
@@ -124,15 +132,15 @@ int main(void)
             break;
             
         }
-				
+		
+		/* ubiquitous ADC sampling code (should be in a function called ADC_updateVPwrBus() */
 		V1_12b = ADC_read_sample( power_bus_voltage_channel );
 		PWM_set1000( V1_12b/pwm_lsb -23 );
 		
+		/* ubiquitous Remote toggle switch code */
 		if (!pause_toggle_power_switch) {
 			check_remote_power_switch();
 		}
-        
-        //_delay_ms( 100 );
     }
         
 }
@@ -365,6 +373,7 @@ static void slave_process(uint8_t *receivedData, uint8_t *sendData) {
 		break;
 	default:
 		// Unknown message type
+		sendData[0] = -1; //error msg
 		break;
 	}
 }
