@@ -5,13 +5,15 @@
  *  Author: Josh
  */ 
 
-#include "sw.h"
-#include "twi.h"
+//#include "twi.h"
+#include "drivers/twi.h"
+#include "drivers/twim.h"
 #include "utils/status_codes.h"
 #include <avr/interrupt.h>
 #include <avr/cpufunc.h>
-#include "config.h"
 #include <stdlib.h>
+#include <stdio.h>
+
 
 /* Master Transfer Descriptor */
 static struct
@@ -273,7 +275,7 @@ static void twim_interrupt_handler(void)
  */
 status_code_t twi_master_init(TWI_t *twi, const twi_options_t *opt)
 {
-	uint8_t const ctrla = CONF_TWIM_INTLVL | TWI_MASTER_RIEN_bm |
+	uint8_t const ctrla = TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_RIEN_bm |
 		TWI_MASTER_WIEN_bm | TWI_MASTER_ENABLE_bm;
 
 	twi->MASTER.BAUD   = opt->speed_reg;
@@ -285,7 +287,7 @@ status_code_t twi_master_init(TWI_t *twi, const twi_options_t *opt)
 
 	/* Enable configured PMIC interrupt level. */
 
-	PMIC.CTRL |= CONF_PMIC_INTLVL;
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
 	sei();
 

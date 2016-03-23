@@ -33,5 +33,4 @@
 #define POWER_BOARD_TWI_ADDR 0x61
 #define LOW_POWER_VOLTAGE	 0xfe
 
-
 #endif /* CONFIG_H_ */

@@ -12,7 +12,7 @@
 #include "tempSense.h"
 #include "depth.h"
 
-#include "twi.h"
+#include "drivers/twi.h"
 
 enum DepthState {
 	NOT_RUNNING = 0,

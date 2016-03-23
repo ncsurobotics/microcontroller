@@ -110,6 +110,7 @@
         <avrgcc.compiler.directories.IncludePaths>
           <ListValues>
             <Value>%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\include</Value>
+            <Value>../../system_include</Value>
           </ListValues>
         </avrgcc.compiler.directories.IncludePaths>
         <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
@@ -133,13 +134,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="src" />
-    <Folder Include="src\utils" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\system_include\drivers\twim.c">
+      <SubType>compile</SubType>
+      <Link>src\twim.c</Link>
+    </Compile>
     <Compile Include="src\analog.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\analog.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\I2Cm.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\I2Cm.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\power.c">
@@ -181,22 +191,10 @@
     <Compile Include="src\tempSense.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\twi.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\twim.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\twi.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="src\uart.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\uart.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\utils\status_codes.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

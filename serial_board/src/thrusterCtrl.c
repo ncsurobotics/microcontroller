@@ -1,5 +1,5 @@
 #include "sw.h"
-#include "twi.h"
+#include "drivers/twi.h"
 #include "config.h"
 
 #include <stdlib.h>

@@ -11,7 +11,7 @@
 
 #include "uart.h"
 #include "analog.h"
-#include "twi.h"
+#include "I2Cm.h"
 #include "config.h"
 	
 /* ******************************************
@@ -95,7 +95,7 @@ int main (void) {
 	
 	/* initialize peripherals */
 	init_serial();	
-	init_twi();
+	I2Cm_initTWI();
 	init_analog();
 	init_motors();
 	
