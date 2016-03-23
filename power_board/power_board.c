@@ -69,7 +69,7 @@ int main(void)
     sei(); // enable global interrupts.
 	
 	/* initialize modules */
-	init_I2C(slave_process);
+	init_I2C(&slave_process);
 	PWM_init();
 	PWM_set1000( 500 );
 	
