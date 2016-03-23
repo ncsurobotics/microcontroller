@@ -38,5 +38,6 @@ typedef struct {
 
 status_code_t twi_master_init(TWI_t *twi, const twi_options_t *opt);
 status_code_t twi_master_transfer(TWI_t *twi,const twi_package_t *package, bool read);
+status_code_t twi_master_transfer2(TWI_t *twi, const twi_package_t *package, bool read1, bool read2);
 
 #endif

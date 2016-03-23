@@ -41,7 +41,7 @@ ISR(TCC0_OVF_vect) {
 	
 	/* Check kill status every 100ms */
 	if(counter % 10) {
-		//check_kill();
+		check_kill();
 	}
 	
 	update_status(counter);

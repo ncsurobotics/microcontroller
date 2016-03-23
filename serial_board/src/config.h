@@ -17,20 +17,20 @@
 #define TWI_MASTER				TWIE
 #define TWI_MASTER_PORT			PORTE
 #define TWI_SPEED				50000
-#define TWI_SLAVE_ADDR1			0x60
 #define TWI_MASTER_ADDR			0x50
-#define CONF_TWIM_INTLVL        TWI_MASTER_INTLVL_MED_gc
-#define CONF_PMIC_INTLVL        PMIC_MEDLVLEN_bm
 
 /* Depth Sensor */
-#define DEPTH_TWI_ADDR_SLAVE	0x9A>>1
+#define DEPTH_SENSOR_SLAVE_ADDR	0x9A>>1 // 0x9A is what it says on the data sheet... but
+										// it didnt explain how the 8th bit is actually r/w
+										// bit. so actually, the address 0x4b, but we use
+										// 0x9A>>1 instead.
 
 /* Thruster board TWI */
-#define THRUSTER_TWI_ADDR		0x60
+#define THRUSTER_BOARD_SLAVE_ADDR	0x60
 
 /* ******* POWER ****
 ******************* */ 
-#define POWER_BOARD_TWI_ADDR 0x61
-#define LOW_POWER_VOLTAGE	 0xfe
+#define POWER_BOARD_SLAVE_ADDR	0x61
+#define LOW_POWER_VOLTAGE		0xfe
 
 #endif /* CONFIG_H_ */

@@ -9,14 +9,6 @@
 #include "I2Cm.h"
 
 
-enum DepthState {
-	NOT_RUNNING = 0,
-	BYTE1 = 1,
-	BYTE2 = 2
-};
-	
-#define MAX 128
-
 /* Enable TWI interface for communicating with the depth sensor ADC */
 void depth_init(void) {
 	//do nothing... because initialization is done through I2Cm.c
@@ -24,16 +16,16 @@ void depth_init(void) {
 
 char* depth_get_reading2(char message[3]) {
 	status_code_t status;
-	uint8_t* msg = {0};
+	uint8_t msg[2] = {0};
 	
 	/* read data from depth sensor */
-	status = I2Cm_read(DEPTH_TWI_ADDR_SLAVE, 2, msg);
+	status = I2Cm_read(DEPTH_SENSOR_SLAVE_ADDR, 2, msg);
 	
 	/* If I2C transmission was a success*/
 	if (status == STATUS_OK) {
 		message[0] = SW_DEPTH;
-		message[1] = *((uint8_t*) msg + 0);
-		message[2] = *((uint8_t*) msg + 1);
+		message[1] = msg[0];
+		message[2] = msg[1];
 		return message;
 		
 	} else {

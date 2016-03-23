@@ -31,21 +31,34 @@ void I2Cm_initTWI(void) {
 }
 
 /* Read from a slave device while specifying what data (register) the master wants to read */
-void I2Cm_readSlaveRegister(uint8_t addr, uint8_t reg, uint8_t n, uint8_t *buf) {
+status_code_t I2Cm_readSlaveRegister(uint8_t slave_addr, uint8_t reg, uint8_t n, uint8_t *buf) {
 	
-}
-
-/* Blind read from a specified slave device */
-status_code_t I2Cm_read(uint8_t slave_addr, uint8_t n, uint8_t *msg) {
-	/* create variable for transmission */
+	/* create variable for r/w transmission */
 	twi_package_t packet = {
 		.chip			= slave_addr,
-		.addr_length	= 0,
-		.buffer			= (void *)msg,
+		.addr[0]		= reg,
+		.addr_length	= 1,
+		.buffer			= (void *)buf,
 		.length			= n,
 		.no_wait		= false
 	};
 	
-	/* issue (read) transmission to depth sensor. This is a blocking operation. */
+	/* issue (write->start->read) transmission to device. This is a blocking operation. */
+	return twi_master_transfer2(&TWI_MASTER, &packet, true, false);
+}
+
+/* Blind read from a specified slave device */
+status_code_t I2Cm_read(uint8_t slave_addr, uint8_t n, uint8_t *buf) {
+	
+	/* create variable for transmission */
+	twi_package_t packet = {
+		.chip			= slave_addr,
+		.addr_length	= 0,
+		.buffer			= (void *)buf,
+		.length			= n,
+		.no_wait		= false
+	};
+	
+	/* issue (read) transmission to device. This is a blocking operation. */
 	return twi_master_transfer(&TWI_MASTER, &packet, true);
 }

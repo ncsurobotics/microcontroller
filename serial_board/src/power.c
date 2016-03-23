@@ -7,13 +7,19 @@
 
 #include "power.h"
 #include "config.h"
+#include "I2Cm.h"
+#include "central_data_dictionary.h"
 
+/* query power board for battery bus voltage and notify seawolf if voltage is low */
 void check_batteries(void) {
+	
 	/* initialize variables */
 	char message[3] = {SW_BATTERY, 0, 0};
+	uint8_t voltage[2] = {0};
 	
 	/* obtain a measurement from the power bus (sensor on power board) */
-	uint8_t power_bus_volts = power_getPowerBusVoltage();
+	power_getPowerBusVoltage_raw(voltage);
+	uint16_t power_bus_volts = ((uint16_t)voltage[1])<<8 | ((uint16_t) voltage[0]);
 	
 	/* if voltage is good */
 	if (power_bus_volts > LOW_POWER_VOLTAGE) {
@@ -27,6 +33,7 @@ void check_batteries(void) {
 	
 }
 
+/* query power board for kill switch status and report to seawolf if there has been a change */
 void check_kill(void) {
 	static int8_t prev_kill_status = -1;
 	
@@ -47,19 +54,20 @@ void check_kill(void) {
 	}
 }
 
-uint8_t power_getPowerBusVoltage(void) {
-	static uint8_t i = 0;
+void power_getPowerBusVoltage_raw(uint8_t buf[2]) {
+
+	/* send kill_switch status request to power board and recv data*/
+	I2Cm_readSlaveRegister(POWER_BOARD_SLAVE_ADDR, POWERBOARD_I2C_VPOWERBUS, 2, buf);
 	
-	/* simulate working power board code */
-	return (i++ % 3) + 0xfe;
 }
 
+/* Reports status of the kill switch */
 int8_t power_getKillStatus(void) {
-	static int8_t i = 0;
+	uint8_t robot_killed = -1;
 	
-	if ((i++ % 10) == 1) {
-		return 1;
-	} else {
-		return 0;
-	}
+	/* send kill_switch status request to power board */ 
+	I2Cm_readSlaveRegister(POWER_BOARD_SLAVE_ADDR, POWERBOARD_I2C_KILLSWITCH, 1, &robot_killed);
+	
+	/* return status of kill switch */
+	return robot_killed;
 }

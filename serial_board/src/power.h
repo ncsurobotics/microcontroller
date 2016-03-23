@@ -13,7 +13,7 @@
 
 void check_batteries(void);
 void check_kill(void);
-uint8_t power_getPowerBusVoltage(void);
+void power_getPowerBusVoltage_raw(uint8_t buf[2]);
 int8_t	power_getKillStatus(void);
 
 #endif /* POWER_H_ */

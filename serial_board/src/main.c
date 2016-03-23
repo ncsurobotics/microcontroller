@@ -107,6 +107,10 @@ int main (void) {
 	synchronize_comm();
 	#endif
 	
+	#ifdef DISABLE_SYNC
+		#pragma message ("Comm synchronization disabled.")
+	#endif
+	
 	/* after initializing the serial link, start sending depth and
     temperature information */
     start_scheduler(); // periodically sends depth/temp data to seawolf
