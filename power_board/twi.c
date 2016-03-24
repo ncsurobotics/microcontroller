@@ -10,32 +10,3 @@
 #include "twi.h"
 
 #include <stdlib.h>
-
-
-twi_options_t m_options = {
-	.speed     = TWI_SPEED,
-	.chip      = (int) NULL,
-	.speed_reg = TWI_BAUD(/*sysclk_get_cpu_hz()*/F_CPU, TWI_SPEED)
-};
-
-int stream_count = 0;
-
-void init_twi(void) {
-	#ifdef SLAVE_DEVICE
-	#endif
-	
-	#ifdef MASTER_DEVICE
-	/* initialize master with settings from config.h */
-	twi_master_init(&TWI_MASTER, &m_options);
-	#endif
-}
-
-/* Issue read command to slave */
-void twi_query(twi_sock_t* sock, uint8_t addr, uint8_t n_out,  uint8_t n_in) {
-	
-}
-
-/* write to a slave device without expecting any response */
-void twi_send(twi_sock_t* sock, uint8_t addr, uint8_t n_out) {
-	
-}

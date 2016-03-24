@@ -66,6 +66,7 @@ int main(void)
 	PORTD.DIR |= 1<<2;
 		
 	/* enable interrupts */
+    PMIC.CTRL |= (PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm);
     sei(); // enable global interrupts.
 	
 	/* initialize modules */
@@ -132,6 +133,7 @@ int main(void)
             break;
             
         }
+		
 		
 		/* ubiquitous ADC sampling code (should be in a function called ADC_updateVPwrBus() */
 		V1_12b = ADC_read_sample( power_bus_voltage_channel );
@@ -366,6 +368,9 @@ void tm_sample_all(void) {
  * Handle incoming message
  */
 static void slave_process(uint8_t *receivedData, uint8_t *sendData) {
+	PORTE.DIR |= 1<<3;
+	PORTE.OUT ^= 1<<3;
+	PORTE.OUT ^= 1<<3;
 	switch (receivedData[0]) {
 	case MESSAGE_IS_ROBOT_KILLED:
 		// Request for kill switch state

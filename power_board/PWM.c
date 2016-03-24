@@ -17,7 +17,7 @@
 typedef struct Pin {
     char* name;
     char* function;
-    uint16_t* port;
+    PORT_t* port;
     uint8_t pos;
     char* PWM_designation;
 } pin;

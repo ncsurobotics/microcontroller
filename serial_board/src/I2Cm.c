@@ -39,12 +39,12 @@ status_code_t I2Cm_readSlaveRegister(uint8_t slave_addr, uint8_t reg, uint8_t n,
 		.addr[0]		= reg,
 		.addr_length	= 1,
 		.buffer			= (void *)buf,
-		.length			= n,
+		.length			= 1,
 		.no_wait		= false
 	};
 	
 	/* issue (write->start->read) transmission to device. This is a blocking operation. */
-	return twi_master_transfer2(&TWI_MASTER, &packet, true, false);
+	return twi_master_transfer(&TWI_MASTER, &packet, true);
 }
 
 /* Blind read from a specified slave device */

@@ -79,7 +79,9 @@
  */
 
 #include "twi.h"
+#include "sw.h"
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
 /*! \brief Initalizes TWI slave driver structure.
  *

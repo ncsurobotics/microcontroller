@@ -24,7 +24,7 @@
 #ifndef MASTER_DEVICE
 	#define TWI_SLAVE				TWIC
 	#define TWI_SPEED				50000
-	#define TWI_SLAVE_ADDR			0x61
+	#define TWI_SLAVE_ADDR			0x62
 	#define CONF_TWIM_INTLVL        TWI_MASTER_INTLVL_MED_gc
 	#define CONF_PMIC_INTLVL        PMIC_MEDLVLEN_bm
 #endif

@@ -222,17 +222,6 @@ void TWI_SlaveWriteHandler(TWI_Slave_t *twi);
 void TWI_SlaveTransactionFinished(TWI_Slave_t *twi, uint8_t result);
 
 
-/*! TWI slave interrupt service routine.
- *
- *  Interrupt service routine for the TWI slave. Copy the interrupt vector
- *  into your code if needed.
- *
-     ISR(TWIC_TWIS_vect)
-    {
-      TWI_SlaveInterruptHandler(&twiSlaveC);
-    }
- *
- */
 /*! \brief Enable Slave Mode of the TWI.
  *
  * \param twi         Base address of the TWI instance.
