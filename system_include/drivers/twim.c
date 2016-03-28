@@ -13,6 +13,7 @@
 #include <avr/cpufunc.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <util/atomic.h>
 
 
 /* Master Transfer Descriptor */
@@ -95,23 +96,56 @@ typedef uint8_t irqflags_t;
  */
 static inline status_code_t twim_acquire(bool no_wait)
 {
-	while (transfer.locked) {
+	/*while (transfer.locked) {
 
 		if (no_wait) { return ERR_BUSY; }
+	}*/
+	bool twi_bus_busy = true;
+	bool proceed = false;
+	
+	/* if user wants this to be a non-blocking operation */
+	while (proceed == false) {
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) 
+		{
+			/* if transfer bus is not locked down. */
+			if (transfer.locked == false) {
+				twi_bus_busy = false;
+			
+				/* change the struct fields */
+				transfer.locked = true;
+				transfer.status = OPERATION_IN_PROGRESS;
+				
+				/* able to proceed */
+				proceed = true;
+			
+			/* transfer bus is busy */
+			} else {
+				twi_bus_busy = true;
+				
+				/* able to proceed */
+				proceed = true;
+			}
+			
+		}
+		
+		/* if user requested non-blocking op, proceed with current bus state even if bus is busy.
+		This is done outside of the atomic block in case user does request actually a blocking operation,
+		the only way the transfer.locked bit can change is if a TWI interrupt occurs that allows some
+		transmission to finish... since our twi code is interrupt driven. */
+		if (no_wait) {
+			proceed = true;
+		}
 	}
-
-	/* callee-save and disable interrupts */
-	irqflags_t flags = SREG;
-	cli();
-
-	/* change the struct fields */
-	transfer.locked = true;
-	transfer.status = OPERATION_IN_PROGRESS;
-
-	/* callee-restore previous interrupt flag */
-	SREG = flags;
-
-	return STATUS_OK;
+		
+			
+	/* if bus *was* not busy, then everything when ok. Nothing to report really. */
+	if (!twi_bus_busy) {
+		return STATUS_OK;
+		
+	/* bus *was* busy. report this to the calling user. */
+	} else {
+		return ERR_BUSY;
+	}
 }
 
 /**

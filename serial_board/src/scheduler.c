@@ -15,6 +15,7 @@
 
 static volatile int counter = 0;
 static char depth_message[3] = {SW_DEPTH, 0, 0};
+char global_depth_sensor_flg = 0;
 
 /* 100 Hz timer */
 /* BACKGROUND: TCC0_OVF is automatically cleared upon the
@@ -39,8 +40,8 @@ ISR(TCC0_OVF_vect) {
 		//check_batteries();
 	}
 	
-	/* Check kill status every 100ms */
-	if(counter % 10) {
+	/* Check kill status every sec */
+	if(counter % 100) {
 		check_kill();
 	}
 	
