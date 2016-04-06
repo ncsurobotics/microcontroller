@@ -7,7 +7,8 @@
 #include "pwm.h"
 
 
-#define DUTY TOP/10 // 50% duty cycle
+//#define DUTY TOP/10 // 10% duty cycle
+#define DUTY 0
 #define TEST_PIN  2
 
 void pwm_init_pin( pin_pwm_t* pin ) {
