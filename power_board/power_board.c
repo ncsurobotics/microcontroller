@@ -40,7 +40,7 @@ void tm_sample_all(void);
 
 int power_bus_voltage_channel           = 3;
 uint8_t thruster_bus_voltage_channel		= 4;
-uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0CF1>>2; //0x0CF1 = 18V
+uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0A80; //0x0A80 = ~18.3V
 uint8_t robot_killed = 0;
 
 /* ****************************
@@ -109,6 +109,8 @@ int main(void)
             if (kill_btn_depressed()==1) {
                 state = SHUTDOWN;
             }
+			// If low voltage detected, force turn off the robot.
+			if( !voltage_sensed_on_master_bus() ) {state = SHUTDOWN;}
 			
 			// Check kill switch (low voltage means kill robot)
 			robot_killed = ADC_read_sample( thruster_bus_voltage_channel ) < 0x09E5;
