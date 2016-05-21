@@ -11,6 +11,8 @@
 #define MASTER_PWR_PIN  1
 #define MASTER_OFF_PIN  0
 #define MESSAGE_IS_ROBOT_KILLED 0
+#define LPF_BUFFER_SIZE 255 //do not make greater than 255.
+//^^ yields about 5 second low pass filter for voltage detection
 
 enum states {
     MASTER_OFF,
@@ -18,6 +20,14 @@ enum states {
     MASTER_ON,
 	SHUTDOWN,
 };
+
+typedef struct lpf_struct
+{
+	uint16_t*	buffer;
+	uint8_t		n_samples;
+	uint8_t		head;
+	uint16_t	value;
+} lpf_t;
 
 enum states state = MASTER_OFF;
 
@@ -34,6 +44,7 @@ int check_remote_power_switch(void);
 void default_startup(int* fail);
 int toggl_sw_state(void);
 int remote_pwr_toggled(void);
+int voltage_sensed_on_master_bus_long(lpf_t *data);
 
 // telemetry function
 void tm_sample_all(void);
@@ -42,6 +53,7 @@ int power_bus_voltage_channel           = 3;
 uint8_t thruster_bus_voltage_channel		= 4;
 uint16_t POWER_BUS_THRESHOLD_VOLTAGE    = 0x0A80; //0x0A80 = ~18.3V
 uint8_t robot_killed = 0;
+
 
 /* ****************************
 Typical GPIO Pin on the board
@@ -83,6 +95,20 @@ int main(void)
 	init_io();
 	int pause_toggle_power_switch = 0;
 	
+	/* low_pass filter */
+	uint16_t v1_buffer[LPF_BUFFER_SIZE] = {1<<12}; //1<<12 is full scale ADC
+		
+	//short hand array initialization didn't work, resorting to for-loop
+	for(int i=0; i < LPF_BUFFER_SIZE; i++) { 
+		v1_buffer[i] = 1<<12;
+	}
+		
+	lpf_t v1_voltage_lpf = {.buffer = v1_buffer, 
+		.n_samples = LPF_BUFFER_SIZE,
+		.head = 0,
+		.value = v1_buffer[0]};
+		
+	
 	/* main loop */
     while (1) {
         switch(state) {
@@ -101,6 +127,11 @@ int main(void)
                 state = MASTER_OFF;
             }
 			
+			//Reset the V1 LPF buffer
+			for(int i=0; i < LPF_BUFFER_SIZE; i++) {
+				v1_buffer[i] = 1<<12; //full scale for 12 bit adc
+			}
+			
             break;
         
         case MASTER_ON: //this is essentially the idle phase
@@ -110,7 +141,8 @@ int main(void)
                 state = SHUTDOWN;
             }
 			// If low voltage detected, force turn off the robot.
-			if( !voltage_sensed_on_master_bus() ) {state = SHUTDOWN;}
+			if( !voltage_sensed_on_master_bus_long(&v1_voltage_lpf) ) {state = SHUTDOWN;}
+			//if( !voltage_sensed_on_master_bus() ) {state = SHUTDOWN;}
 			
 			// Check kill switch (low voltage means kill robot)
 			robot_killed = ADC_read_sample( thruster_bus_voltage_channel ) < 0x09E5;
@@ -124,8 +156,8 @@ int main(void)
             break;
             
         case SHUTDOWN:
-            master_power_off(&fail);
             if ( !fail ) {
+				master_power_off(&fail);
                 state = MASTER_OFF;
             } else {
                 state = MASTER_ON;
@@ -138,8 +170,9 @@ int main(void)
 		
 		
 		/* ubiquitous ADC sampling code (should be in a function called ADC_updateVPwrBus() */
-		V1_12b = ADC_read_sample( power_bus_voltage_channel );
-		PWM_set1000( V1_12b/pwm_lsb -23 );
+		//V1_12b = ADC_read_sample( power_bus_voltage_channel );
+		//PWM_set1000( V1_12b/pwm_lsb -23 ); //raw
+		PWM_set1000( v1_voltage_lpf.value/pwm_lsb -23 ); //low pass filter
 		
 		/* ubiquitous Remote toggle switch code */
 		if (!pause_toggle_power_switch) {
@@ -205,6 +238,8 @@ int toggl_sw_state(void) {
 	return (val == 0); //toggle switch is active low
 }
 
+/* energize the master relay and power the computer as long as the "off"
+button isn't being pressed at the same time. */
 void default_startup(int* fail) {
 	close_master_relay(fail);
 	if ( *fail == 1 ) {
@@ -216,6 +251,8 @@ void default_startup(int* fail) {
 	#endif
 }
 
+/* will energize mater relay as long as "off" button is not being depressed at
+same time. */
 void close_master_relay(int* fail)
 {
     if ( kill_btn_depressed()==0 ) {
@@ -226,6 +263,12 @@ void close_master_relay(int* fail)
     }
 }
 
+/* Checks the GPIO wired to the push button for turning off the robot. This 
+button is labeled "kill", though this isn't to be confused with the 
+"kill switch" located outside the robot for turning on/off the thruster
+circuit.
+  parameters:
+    - fail: equals 0 if success.*/
 void master_power_off(int* fail)
 {
     IO_PORT.OUT &= ~(1<<MASTER_PWR_PIN);
@@ -245,7 +288,32 @@ int voltage_sensed_on_master_bus(void) {
 	int val = ADC_read_sample( power_bus_voltage_channel );
 	if (val >= POWER_BUS_THRESHOLD_VOLTAGE ) {
 		return 1;
-		} else {
+	} else {
+		return 0;
+	}
+}
+
+/* not the most efficient low pass filter, but it gets the job done. */
+int voltage_sensed_on_master_bus_long(lpf_t *data) {
+	//int val = ADC_read_sample( power_bus_voltage_channel );
+	//write new value
+	 data->buffer[data->head] = ADC_read_sample( power_bus_voltage_channel );
+	 
+	//increment pointer
+	data->head = (data->head + 1) % data->n_samples;
+	
+	//sum all values
+	float sum = 0;
+	for(uint8_t i=0; i < data->n_samples; i++) {
+		sum += (float) data->buffer[i];
+	}
+	
+	//shift down to divide
+	data->value = (uint16_t) (sum / data->n_samples);
+	
+	if (data->value >= POWER_BUS_THRESHOLD_VOLTAGE ) {
+		return 1;
+	} else {
 		return 0;
 	}
 }
