@@ -16,6 +16,7 @@
 #include <util/atomic.h>
 
 
+
 /* Master Transfer Descriptor */
 static struct
 {
@@ -94,17 +95,27 @@ typedef uint8_t irqflags_t;
  *
  * \return STATUS_OK if the bus is acquired, else ERR_BUSY.
  */
-static inline status_code_t twim_acquire(bool no_wait)
-{
-	/*while (transfer.locked) {
+static inline status_code_t twim_acquire(bool no_wait) {
+	/* Note: this is designed to handle situations where multiple masters
+	may be present in the electrical system. This is NOT designed to handle 
+	Simultaneous I2C requests on the same board. Do not let your code try to
+	initiate an I2C transaction while it's already performing one, I.E. don't try
+	write any asynchronous I2C stuff with interrupts.
+	
+	The typical usage is that every I2C transaction will begin with this "twim_acquire" function.
+	The transaction is complete once the "twim_release" function is performed. You run into the
+	trouble described above if you try to have an interrupt run this acquire function before some 
+	lower priority code has a chance to complete the "twim_release" function. */
 
-		if (no_wait) { return ERR_BUSY; }
-	}*/
+	/* setup variables */
 	bool twi_bus_busy = true;
 	bool proceed = false;
 	
-	/* if user wants this to be a non-blocking operation */
+	
 	while (proceed == false) {
+		
+		// treat this code as though it is atomic so as to prevent TWI interrupts 
+		// from corrupting this group of parameters while they are being read.
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) 
 		{
 			/* if transfer bus is not locked down. */
@@ -122,8 +133,8 @@ static inline status_code_t twim_acquire(bool no_wait)
 			} else {
 				twi_bus_busy = true;
 				
-				/* able to proceed */
-				proceed = true;
+				/* unable to proceed. block. */
+				proceed = false;
 			}
 			
 		}
@@ -136,13 +147,14 @@ static inline status_code_t twim_acquire(bool no_wait)
 			proceed = true;
 		}
 	}
-		
+	
+	
 			
-	/* if bus *was* not busy, then everything when ok. Nothing to report really. */
+	/* if bus *was* not busy, then everything when ok to move on. */
 	if (!twi_bus_busy) {
 		return STATUS_OK;
 		
-	/* bus *was* busy. report this to the calling user. */
+	/* else bus *was* busy. report this to the calling user. */
 	} else {
 		return ERR_BUSY;
 	}
@@ -193,7 +205,7 @@ static inline void twim_write_handler(void)
 	TWI_t * const         bus = transfer.bus;
 	twi_package_t * const pkg = transfer.pkg;
 	
-
+	
 	if (transfer.addr_count < pkg->addr_length) {
 
 		const uint8_t * const data = pkg->addr;
@@ -215,7 +227,6 @@ static inline void twim_write_handler(void)
 	} else {
 
 		/* Send STOP condition to complete the transaction. */
-
 		bus->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 		transfer.status = STATUS_OK;
 	}
@@ -381,6 +392,7 @@ status_code_t twi_master_transfer(TWI_t *twi,
 		}
 
 		status = twim_release(); // this can be a blocking operation
+		
 	}
 
 	return status;

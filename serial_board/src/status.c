@@ -1,9 +1,9 @@
 #include "sw.h"
 
-static int status_value = 200;
+static int status_value = 10;
 
 void update_status(int counter) {
-	if(counter % 200 >= status_value) {
+	if(counter % status_value <= 0) {
 		PORTA.OUTSET = 1 << 2;
 		} else {
 		PORTA.OUTCLR = 1 << 2;

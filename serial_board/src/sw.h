@@ -83,7 +83,10 @@ void init_solenoids(void);
 void set_solenoid(Solenoid solenoid, bool value);
 
 void init_motors(void);
+void thruster_thrusterRequest(Motor motor, int speed);
+void thruster_applyThrusterUpdates(void);
 int thruster_setThrusterSpeed(Motor motor, int speed);
+
 
 /*
 void init_serial(void);

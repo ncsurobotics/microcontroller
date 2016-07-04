@@ -24,16 +24,18 @@ ISR(TCC0_OVF_vect) {
 	/* Increment counter, roll over at 1000 (once every 10 seconds) */
 	counter = (counter + 1) % 1000;
 	
+	/* *********** ********** 
+	****** I2C Requests ***** 
+	***************************/
+	
 	/* Send depth at 10 Hz */
 	if (counter % 10 == 0) {
 		depth_get_reading2(depth_message);
 		serial_send_bytes(depth_message, 3);
 	}
 	
-	/* Send termperature once a second */
-	if(counter % 100 == 0) {
-		ADCA.CH1.CTRL |= ADC_CH_START_bm;
-	}
+	/* check/apply for thruster updates at 100Hz */
+	thruster_applyThrusterUpdates();
 	
 	/* Check batteries every 5 seconds */
 	if(counter % 500 == 0) {
@@ -41,9 +43,20 @@ ISR(TCC0_OVF_vect) {
 	}
 	
 	/* Check kill status every sec */
-	if(counter % 100) {
+	if(counter % 100 == 0) {
 		check_kill();
 	}
+	
+	/* *********** ********** 
+	*** non-I2C Requests ***** 
+	***************************/
+	
+	/* Send termperature once a second */
+	if(counter % 100 == 0) {
+		ADCA.CH1.CTRL |= ADC_CH_START_bm;
+	}
+	
+	
 	
 	update_status(counter);
 }

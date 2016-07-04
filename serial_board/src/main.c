@@ -94,6 +94,7 @@ int main (void) {
     CLK.LOCK = CLK_LOCK_bm;
 	
 	/* initialize peripherals */
+	//init_status(); // for debugging purposes only
 	init_serial();	
 	I2Cm_initTWI();
 	init_analog();
@@ -116,6 +117,14 @@ int main (void) {
     start_scheduler(); // periodically sends depth/temp data to seawolf
 	
 	while(true) {
+		/* WARNING: do not put I2C commands inside of this loop. Doing so will create many opportunities for
+		I2C stuff embedded in the interrupt driven scheduler (see schedule.c) to interrupt whatever I2C code you write here,
+		which will create some really hard to debug I2C "latch-ups" that will be seemingly random and hard to debug. Really, it
+		all is because I2C commands on the serial board commands aren't really supposed to be interrupted by other I2C commands on the serial board).
+		Rather, the best practice for asynchronous I2C request from seawolf is to handle them just like requests: Quietly note that a
+		change/command on the I2C bus is being requested, and let the scheduler handle when that request is actually performed.
+		This is done perfectly by the thruster_thrusterRequest(...) command, and future I2C stuff should be done in a similar fashion. */
+		
 		serial_read_bytes(command, 3);
 		
 		switch(command[0]) {
@@ -127,7 +136,8 @@ int main (void) {
 			break;
 		
 		case SW_MOTOR:
-			thruster_setThrusterSpeed(command[1], command[2]);
+			thruster_thrusterRequest(command[1], command[2]);
+			
 			break;
 			
 		case SW_STATUS:
